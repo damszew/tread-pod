@@ -71,6 +71,13 @@ in
       '';
     };
 
+    sniff = {
+      description = "Capture a treadmill's FTMS traffic into crates/engine/tests/fixtures/ftms (--help for options)";
+      exec = ''
+        cd "$DEVENV_ROOT" && cargo run -q --release -p ftms-sniff -- "$@"
+      '';
+    };
+
     web-dev = {
       description = "Run the api dev server and trunk serve (proxying /api)";
       exec = "devenv up";
@@ -138,7 +145,7 @@ in
   };
 
   enterShell = ''
-    echo "tread-pod dev shell — scripts: check, web-build, web-dev, esp-setup, fw-build, fw-flash, fw-image"
+    echo "tread-pod dev shell — scripts: check, sniff, web-build, web-dev, esp-setup, fw-build, fw-flash, fw-image"
   '';
 
   enterTest = ''

@@ -1,0 +1,16 @@
+[package]
+name = "ftms-sniff"
+description = "Spike: capture raw FTMS notifications from a treadmill as engine test fixtures"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1"
+bluer = { version = "0.17", features = ["bluetoothd"] }
+clap = { version = "4", features = ["derive"] }
+futures = "0.3"
+tokio = { workspace = true, features = ["rt", "macros", "signal", "time"] }
+
+[lints]
+workspace = true

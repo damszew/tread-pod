@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "tools/*"]
 # Built with the Xtensa `esp` toolchain via the `fw-*` devenv scripts.
 exclude = ["firmware"]
 
