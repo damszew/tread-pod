@@ -1,0 +1,16 @@
+[package]
+name = "engine"
+description = "Sans-IO core of tread-pod: FTMS parsing, RSC encoding, treadmill selection, config"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+postcard.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true
