@@ -1,6 +1,6 @@
 use picoserve::{
     extract::{Json, State},
-    response::StatusCode,
+    response::{NoContent, StatusCode},
     routing::{PathRouter, get, post},
 };
 
@@ -22,6 +22,10 @@ pub trait AppHandle: Clone {
     fn set_settings(&self, settings: Settings);
 }
 
+/// `204 No Content` without a body (a bare [`StatusCode`] response always writes one, which
+/// browsers reject for 204).
+const NO_CONTENT: (StatusCode, NoContent) = (StatusCode::NO_CONTENT, NoContent);
+
 /// The `/api` routes. Callers attach state with [`picoserve::Router::with_state`] and add their
 /// own routes (e.g. static assets).
 pub fn router<H: AppHandle>() -> picoserve::Router<impl PathRouter<H>, H> {
@@ -34,9 +38,9 @@ pub fn router<H: AppHandle>() -> picoserve::Router<impl PathRouter<H>, H> {
             "/api/select",
             post(async |State(app): State<H>, Json(select): Json<Select>| {
                 if app.select(select) {
-                    StatusCode::NO_CONTENT
+                    Ok(NO_CONTENT)
                 } else {
-                    StatusCode::NOT_FOUND
+                    Err(StatusCode::NOT_FOUND)
                 }
             }),
         )
@@ -45,7 +49,7 @@ pub fn router<H: AppHandle>() -> picoserve::Router<impl PathRouter<H>, H> {
             get(async |State(app): State<H>| picoserve::response::Json(app.settings())).put(
                 async |State(app): State<H>, Json(settings): Json<Settings>| {
                     app.set_settings(settings);
-                    StatusCode::NO_CONTENT
+                    NO_CONTENT
                 },
             ),
         )
