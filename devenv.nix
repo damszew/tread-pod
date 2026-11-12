@@ -115,7 +115,7 @@ in
   };
 
   processes = {
-    api-dev.exec = "cargo run -p api --example dev_server --features server,dev-server";
+    api-dev.exec = "cargo run -p api --example dev_server --features dev-server";
     trunk.exec = "cd crates/web && trunk serve --offline";
   };
 

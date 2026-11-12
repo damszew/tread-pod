@@ -1,0 +1,34 @@
+[package]
+name = "api"
+description = "tread-pod config API: shared request/response types and the picoserve router"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+## The picoserve router, used by the firmware and the dev server. Off for the WASM web UI.
+server = ["dep:picoserve"]
+## Host-only mock server for UI development (`cargo run -p api --example dev_server`).
+dev-server = ["server", "picoserve/tokio", "dep:tokio"]
+
+[dependencies]
+engine.workspace = true
+heapless.workspace = true
+serde.workspace = true
+
+picoserve = { workspace = true, optional = true, features = ["json"] }
+tokio = { workspace = true, optional = true, features = [
+  "rt",
+  "net",
+  "macros",
+] }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[[example]]
+name = "dev_server"
+required-features = ["dev-server"]
+
+[lints]
+workspace = true
