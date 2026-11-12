@@ -8,4 +8,5 @@
 
 pub mod config;
 pub mod ftms;
+pub mod rsc;
 pub mod speed;

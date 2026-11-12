@@ -72,7 +72,7 @@ Modules:
 | `ftms::treadmill_data` | Flag-driven parser covering every optional field |
 | `ftms::reassembly` | Merges notifications split with the "More Data" flag |
 | `rsc::measurement` | RSC Measurement (`0x2A53`) encoder |
-| `rsc::feature` | RSC Feature (`0x2A54`) bits; cadence on/off |
+| `rsc::feature` | RSC Feature (`0x2A54`) bits (cadence has none: it is always sent, 0 when off) |
 | `speed` | 0.01 km/h → 1/256 m/s, rounded **up**; speed derived from total distance |
 | `selection` | Scanning → Candidate → Connected → Forwarding → Lost |
 | `session` | Top-level machine: watch-subscribed gating, notify delay, button handling |
