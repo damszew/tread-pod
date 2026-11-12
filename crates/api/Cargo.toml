@@ -3,7 +3,6 @@ name = "api"
 description = "tread-pod config API: shared request/response types and the picoserve router"
 version.workspace = true
 edition.workspace = true
-rust-version.workspace = true
 
 [features]
 ## The picoserve router, used by the firmware and the dev server. Off for the WASM web UI.

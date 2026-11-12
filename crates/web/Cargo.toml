@@ -1,0 +1,21 @@
+[package]
+name = "web"
+description = "tread-pod config UI (Leptos, client-side rendered, built with Trunk)"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[dependencies]
+api.workspace = true
+leptos = { version = "0.8", features = ["csr"] }
+gloo-net = { version = "0.7", default-features = false, features = [
+  "http",
+  "json",
+] }
+# Must match `wasm-bindgen-cli` from devenv (nixpkgs); bump both together.
+wasm-bindgen = "=0.2.129"
+console_error_panic_hook = "0.1"
+serde.workspace = true
+
+[lints]
+workspace = true

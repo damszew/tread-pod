@@ -1,0 +1,15 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[tools]
+# Use the Nix-provided binary instead of downloading; must match crates/web/Cargo.toml.
+wasm_bindgen = "0.2.129"
+
+[serve]
+addresses = ["127.0.0.1"]
+port = 8000
+
+# `devenv up` runs the api dev server on :8080 next to `trunk serve`.
+[[proxy]]
+backend = "http://127.0.0.1:8080/api"

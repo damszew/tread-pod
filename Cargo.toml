@@ -7,7 +7,6 @@ exclude = ["firmware"]
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.85"
 
 [workspace.dependencies]
 engine = { path = "crates/engine" }
@@ -32,3 +31,6 @@ must_use_candidate = "allow"
 [profile.release]
 lto = true
 codegen-units = 1
+
+[profile.release.package.web]
+opt-level = "z"
