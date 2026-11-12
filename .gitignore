@@ -1,0 +1,15 @@
+# Rust
+/target
+
+# devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+.pre-commit-config.yaml
+
+# web (Trunk output)
+/crates/web/dist
+
+# firmware (separate workspace, ESP-IDF checkout)
+/firmware/target
+/firmware/.embuild
