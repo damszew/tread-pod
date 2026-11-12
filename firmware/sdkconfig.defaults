@@ -1,0 +1,5 @@
+# Rust std on ESP-IDF needs a bigger main task stack than the C default.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16000
+
+# XIAO ESP32-S3: 8 MB flash.
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y

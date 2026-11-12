@@ -13,6 +13,13 @@ let
     export CARGO_HOME="$DEVENV_STATE/esp/cargo"
     export PATH="${pkgs.rustup}/bin:$CARGO_HOME/bin:$PATH"
     unset RUSTFLAGS RUSTDOCFLAGS RUSTC CARGO RUST_SRC_PATH
+    # LIBCLANG_PATH etc. for bindgen, written by espup.
+    if [ -f "$DEVENV_STATE/esp/export-esp.sh" ]; then . "$DEVENV_STATE/esp/export-esp.sh"; fi
+    # Build scripts are linked by the Nix toolchain, so their loader doesn't search /usr/lib;
+    # espup's prebuilt libclang needs libstdc++ from somewhere.
+    export LD_LIBRARY_PATH="${
+      lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]
+    }''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
   '';
 in
 {

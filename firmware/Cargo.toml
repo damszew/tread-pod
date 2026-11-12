@@ -1,0 +1,30 @@
+[package]
+name = "firmware"
+description = "tread-pod bridge firmware for the Seeed XIAO ESP32-S3"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Not part of the root workspace: this builds with the Xtensa `esp` toolchain (see
+# rust-toolchain.toml) through the `fw-*` devenv scripts.
+[workspace]
+
+[[bin]]
+name = "firmware"
+harness = false   # no test harness on the device
+
+[dependencies]
+engine = { path = "../crates/engine" }
+esp-idf-svc = "0.53"
+log = "0.4"
+anyhow = "1"
+
+[build-dependencies]
+embuild = "0.33"
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true    # symbols are nice and don't increase the flashed size
+opt-level = "z"

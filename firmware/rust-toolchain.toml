@@ -1,0 +1,3 @@
+# Installed by `esp-setup` (espup) into .devenv/state/esp.
+[toolchain]
+channel = "esp"
