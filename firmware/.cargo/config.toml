@@ -11,6 +11,6 @@ build-std = ["std", "panic_abort"]
 
 [env]
 MCU = "esp32s3"
-ESP_IDF_VERSION = "v5.5"
+ESP_IDF_VERSION = "v5.5.6"
 # Keep the ESP-IDF checkout and its tools in firmware/.embuild (gitignored).
 ESP_IDF_TOOLS_INSTALL_DIR = "workspace"

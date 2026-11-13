@@ -122,10 +122,21 @@ the PC without flashing the board.
 
 ## `firmware`: ESP32-S3
 
-- **Stack (std path):** `esp-idf-svc` + `esp32-nimble` (dual-role BLE). The runtime is Tokio
-  `current_thread` or Embassy on ESP-IDF; a spike decides which.
-- **Main loop:** collects BLE, button and timer events into a channel, calls `session.handle`,
-  and carries out the returned actions.
+- **Stack (std path):** ESP-IDF v5.5.6 + `esp-idf-svc` + `esp32-nimble` (NimBLE, dual-role).
+  No async runtime: plain threads and an `mpsc` channel are enough for the bridge.
+- **Main loop** (`main.rs`): BLE callbacks and the central thread send owned `Input`s over a
+  channel; the loop timestamps each one, passes it to `session.handle`, ticks the session every
+  100 ms, and carries out the returned actions.
+- **Footpod** (`footpod.rs`): RSC service (Measurement notify, Feature read) and Battery Service
+  (level 100). Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
+  and the chip's public address, which comes from the eFuse base MAC and so never changes.
+  Watch subscription is tracked per connection: the first subscriber sends `WatchSubscribed`, the
+  last unsubscribe or disconnect sends `WatchUnsubscribed`.
+- **Central** (`central.rs`): its own thread, since esp32-nimble scan and connect calls block.
+  Scans in 500 ms windows at a 30 % duty cycle (NimBLE can't start a connection while scanning),
+  reports FTMS advertisements and their scan responses, and between windows reconciles the one
+  connection the session wants: connect, discover FTMS, subscribe to Treadmill Data. A connect
+  the session gives up on is cancelled from the main thread (`ble_gap_conn_cancel`).
 - **Config:** postcard blob in NVS.
 - **Button:** short press cycles treadmills, long press enters config mode, very long press does
   a factory reset.
@@ -227,7 +238,8 @@ Everything is written from the Bluetooth SIG specifications (FTMS, RSC, BAS).
 
 ## Open questions
 
-- Tokio `current_thread` vs Embassy on ESP-IDF, and whether picoserve runs cleanly on the chosen one.
+- Which executor serves picoserve in config mode (Tokio `current_thread` or Embassy on ESP-IDF); the
+  BLE side needs none.
 - Whether a community Nix flake for the Xtensa Rust toolchain is good enough to replace espup.
 - RSSI separation between adjacent gym treadmills: is auto-pick reliable, or should pinning be the default?
 - Actual gzipped size of the Leptos bundle, and how long it takes to load over the soft AP.
