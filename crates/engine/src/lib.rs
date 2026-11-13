@@ -9,4 +9,6 @@
 pub mod config;
 pub mod ftms;
 pub mod rsc;
+pub mod selection;
+pub mod session;
 pub mod speed;

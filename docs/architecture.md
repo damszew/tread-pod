@@ -57,13 +57,26 @@ the actions it returns. This keeps it executor-agnostic: it works the same under
 or Embassy, and a later esp-hal/trouble port only replaces the adapter code.
 
 ```rust
-session.handle(now_ms: u64, event: Event) -> Actions   // Actions: heapless::Vec<Action, N>
+session.handle(now_ms: u64, event: Event) -> Actions   // Actions: heapless::Vec<Action, 4>
 ```
 
-- **Events:** `AdvSeen { addr, rssi, name }`, `WatchSubscribed`, `WatchUnsubscribed`,
-  `FtmsNotify(&[u8])`, `Disconnected`, `ButtonShort`, `Tick`, …
-- **Actions:** `Connect(addr)`, `Disconnect`, `NotifyRsc([u8; N])`, `Persist(Config)`,
-  `SetLed(LedState)`, …
+- **Events:** `AdvSeen { address, rssi, name }`, `WatchSubscribed`, `WatchUnsubscribed`,
+  `Connected(addr)`, `Disconnected(addr)`, `TreadmillData(&[u8])`, `Button`, `Select(addr)`,
+  `SetConfig(Config)`, `Tick` (at least every 250 ms).
+- **Actions:** `Connect(addr)`, `Disconnect(addr)`, `NotifyRsc(Encoded)`, `Persist(Config)`.
+- **State for the LED and API** is read from the session (`link()`, `target()`, `candidates()`,
+  `speed(now)`) rather than pushed as actions.
+- The backend **scans continuously** (low duty cycle) and reports every FTMS advertisement, so
+  the candidate list stays fresh for the button and the web UI.
+
+Session rules:
+- Nothing connects until the watch subscribes; the treadmill is released when it unsubscribes.
+- The *target* sticks for the whole workout: a button or API choice, else the pinned treadmill,
+  else the strongest RSSI after a 2 s scan window. A lost link waits for the same treadmill
+  instead of jumping to a neighbour; the button cycles through candidates in discovery order.
+- Timeouts: connect 10 s, no data 5 s, retry after 1 s.
+- RSC is notified for every treadmill record, and as a heartbeat after 2 s without one; a speed
+  older than 3 s is sent as 0. Nothing is sent in the first 1 s after the watch subscribes.
 
 Modules:
 
@@ -73,9 +86,9 @@ Modules:
 | `ftms::reassembly` | Merges notifications split with the "More Data" flag |
 | `rsc::measurement` | RSC Measurement (`0x2A53`) encoder |
 | `rsc::feature` | RSC Feature (`0x2A54`) bits (cadence has none: it is always sent, 0 when off) |
-| `speed` | 0.01 km/h → 1/256 m/s, rounded **up**; speed derived from total distance |
-| `selection` | Scanning → Candidate → Connected → Forwarding → Lost |
-| `session` | Top-level machine: watch-subscribed gating, notify delay, button handling |
+| `speed` | 0.01 km/h → 1/256 m/s, rounded **up**; speed derived from total distance (10 s window) |
+| `selection` | Candidate list (discovery order, smoothed RSSI, 10 s expiry), strongest / next pick |
+| `session` | Top-level machine: link state (Idle → Scanning → Connecting → Connected), target, watch gating, notify delay/heartbeat, button, API |
 | `config` | `Config { version, pinned, cadence, … }`, serde + postcard |
 
 Tests:

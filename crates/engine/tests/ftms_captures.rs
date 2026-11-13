@@ -1,36 +1,12 @@
 //! Parses real treadmill captures from `tests/fixtures/ftms` (recorded with `sniff`).
 
+mod common;
+
+use common::{Line, load};
 use engine::{
     ftms::{Reassembler, TreadmillData, treadmill_data::Incline},
     speed::FtmsSpeed,
 };
-
-/// A capture line: `<ms> <uuid16> <hex>`.
-struct Line {
-    ms: u32,
-    uuid: u16,
-    bytes: Vec<u8>,
-}
-
-fn load(name: &str) -> Vec<Line> {
-    let path = format!("{}/tests/fixtures/ftms/{name}", env!("CARGO_MANIFEST_DIR"));
-    std::fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("{path}: {e}"))
-        .lines()
-        .filter(|l| !l.starts_with('#') && !l.trim().is_empty())
-        .map(|l| {
-            let mut parts = l.split_whitespace();
-            let ms = parts.next().unwrap().parse().unwrap();
-            let uuid = u16::from_str_radix(parts.next().unwrap(), 16).unwrap();
-            let hex = parts.next().unwrap();
-            let bytes = (0..hex.len())
-                .step_by(2)
-                .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
-                .collect();
-            Line { ms, uuid, bytes }
-        })
-        .collect()
-}
 
 /// Parses every Treadmill Data notification and reassembles records, with the time each
 /// record completed.
