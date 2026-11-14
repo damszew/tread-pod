@@ -221,7 +221,9 @@ async fn connect(
             .get_characteristic(TREADMILL_DATA)
             .await?
             .on_notify(move |data| send(&tx, Input::TreadmillData(data.to_vec())))
-            .subscribe_notify(false)
+            // With response: the CCCD must be written with a Write Request, and a Write Command
+            // (no response) can be silently ignored: the FS-4C02A8 sent no data after one.
+            .subscribe_notify(true)
             .await
     }
     .await;
