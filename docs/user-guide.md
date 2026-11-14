@@ -83,6 +83,9 @@ tread-pod picks the treadmill with the strongest signal when your watch starts u
 - **Unplugging is safe.** You can unplug tread-pod at any time. Your watch stays paired, and the
   pairing survives power cuts.
 - **Cadence (steps per minute)** comes from your watch, not from tread-pod.
+- **Firmware version and serial number** are shown on your watch in the foot pod's details
+  (on Garmin: select the sensor, then **About**). If they're missing after an update, remove the
+  foot pod from the watch and pair it again.
 - **The watch works out distance from the speed.** On some treadmills, this can differ a little
   from the treadmill's own display.
 

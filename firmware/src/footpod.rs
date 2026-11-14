@@ -1,5 +1,6 @@
-//! The footpod the watch pairs with: an RSC sensor (`0x1814`) plus a Battery Service (`0x180F`),
-//! which some Garmins need before they pair.
+//! The footpod the watch pairs with: an RSC sensor (`0x1814`), a Battery Service (`0x180F`),
+//! which some Garmins need before they pair, and Device Information (`0x180A`) for the watch's
+//! sensor details page.
 //!
 //! The identity never changes: the name is fixed and NimBLE advertises the chip's public address,
 //! derived from the eFuse base MAC, so it is the same after every reboot and factory reset.
@@ -24,6 +25,19 @@ const RSC_MEASUREMENT: BleUuid = BleUuid::from_uuid16(0x2a53);
 const RSC_FEATURE: BleUuid = BleUuid::from_uuid16(0x2a54);
 const BATTERY_SERVICE: BleUuid = BleUuid::from_uuid16(0x180f);
 const BATTERY_LEVEL: BleUuid = BleUuid::from_uuid16(0x2a19);
+const DEVICE_INFORMATION: BleUuid = BleUuid::from_uuid16(0x180a);
+const MODEL_NUMBER: BleUuid = BleUuid::from_uuid16(0x2a24);
+const SERIAL_NUMBER: BleUuid = BleUuid::from_uuid16(0x2a25);
+const FIRMWARE_REVISION: BleUuid = BleUuid::from_uuid16(0x2a26);
+const HARDWARE_REVISION: BleUuid = BleUuid::from_uuid16(0x2a27);
+const MANUFACTURER_NAME: BleUuid = BleUuid::from_uuid16(0x2a29);
+
+/// Shown by the watch under the sensor's "about" page.
+const MANUFACTURER: &str = "tread-pod";
+const MODEL: &str = "tread-pod FTMS bridge";
+const HARDWARE: &str = "Seeed XIAO ESP32-S3";
+/// Crate version and commit, set by `build.rs`.
+const FIRMWARE: &str = env!("TREAD_POD_FIRMWARE_REVISION");
 
 /// GAP appearance: Running Walking Sensor, In-Shoe.
 const APPEARANCE: u16 = 0x0441;
@@ -77,6 +91,29 @@ impl Footpod {
             .lock()
             // Mains powered.
             .set_value(&[100]);
+
+        // Device Information. The serial number is the footpod's address, which is unique to the
+        // chip and never changes.
+        let serial: String = device
+            .get_addr()?
+            .as_be_bytes()
+            .iter()
+            .map(|b| format!("{b:02X}"))
+            .collect();
+        let info = server.create_service(DEVICE_INFORMATION);
+        for (uuid, value) in [
+            (MANUFACTURER_NAME, MANUFACTURER),
+            (MODEL_NUMBER, MODEL),
+            (SERIAL_NUMBER, serial.as_str()),
+            (HARDWARE_REVISION, HARDWARE),
+            (FIRMWARE_REVISION, FIRMWARE),
+        ] {
+            info.lock()
+                .create_characteristic(uuid, NimbleProperties::READ)
+                .lock()
+                .set_value(value.as_bytes());
+        }
+        log::info!("device info: {MODEL}, firmware {FIRMWARE}, serial {serial}");
 
         server.on_connect(|_, desc| log::info!("watch connected: {}", desc.address()));
         server.on_disconnect(move |desc, reason| {

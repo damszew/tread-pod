@@ -127,8 +127,9 @@ the PC without flashing the board.
 - **Main loop** (`main.rs`): BLE callbacks and the central thread send owned `Input`s over a
   channel; the loop timestamps each one, passes it to `session.handle`, ticks the session every
   100 ms, and carries out the returned actions.
-- **Footpod** (`footpod.rs`): RSC service (Measurement notify, Feature read) and Battery Service
-  (level 100). Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
+- **Footpod** (`footpod.rs`): RSC service (Measurement notify, Feature read), Battery Service
+  (level 100) and Device Information (manufacturer, model, hardware, serial = the footpod address,
+  firmware = crate version + commit embedded by `build.rs`). Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
   and the chip's public address, which comes from the eFuse base MAC and so never changes.
   Watch subscription is tracked per connection: the first subscriber sends `WatchSubscribed`, the
   last unsubscribe or disconnect sends `WatchUnsubscribed`.
