@@ -17,6 +17,7 @@ harness = false   # no test harness on the device
 engine = { path = "../crates/engine" }
 esp-idf-svc = "0.53"
 esp32-nimble = "0.13"
+embassy-futures = "0.1"
 log = "0.4"
 anyhow = "1"
 

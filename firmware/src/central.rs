@@ -16,8 +16,12 @@ use std::{
     time::{Duration, Instant},
 };
 
+use embassy_futures::select::{Either, select};
 use engine::config::Address;
-use esp_idf_svc::hal::{delay::FreeRtos, task::block_on};
+use esp_idf_svc::{
+    hal::{delay::FreeRtos, task::block_on},
+    timer::{EspAsyncTimer, EspTaskTimerService},
+};
 use esp32_nimble::{
     BLEAddress, BLEAddressType, BLEAdvertisedData, BLEClient, BLEDevice, BLEError, BLEScan,
     utilities::BleUuid,
@@ -35,6 +39,11 @@ const SCAN_INTERVAL_MS: u16 = 100;
 const SCAN_LISTEN_MS: u16 = 30;
 /// How often to log what scanning saw.
 const SCAN_SUMMARY: Duration = Duration::from_secs(10);
+/// Longest a connect + discover + subscribe may take. esp32-nimble's `connect` waits for the MTU
+/// exchange, and a link lost before it completes never wakes it, so it needs an outer bound.
+/// Shorter than the session's connect timeout, so this thread is free again when the session
+/// retries.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(8);
 
 enum Command {
     Connect(Address),
@@ -82,6 +91,8 @@ impl Central {
 
 async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Option<Address>>) {
     let device = BLEDevice::take();
+    let timers = EspTaskTimerService::new().expect("timer service");
+    let mut timer = timers.timer_async().expect("async timer");
     let mut scan = BLEScan::new();
     scan.active_scan(true)
         .interval(SCAN_INTERVAL_MS)
@@ -134,7 +145,7 @@ async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Optio
                 .copied()
                 .unwrap_or_else(|| BLEAddress::from_be_bytes(address, BLEAddressType::Public));
             *connecting.lock().unwrap() = Some(address);
-            let result = connect(device, peer, tx).await;
+            let result = connect(device, peer, tx, &mut timer).await;
             *connecting.lock().unwrap() = None;
             match result {
                 Ok(client) => {
@@ -196,13 +207,15 @@ async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Optio
     }
 }
 
-/// Connects and subscribes to Treadmill Data.
+/// Connects and subscribes to Treadmill Data, within [`CONNECT_TIMEOUT`].
 async fn connect(
     device: &BLEDevice,
     peer: BLEAddress,
     tx: &Sender,
-) -> Result<Box<BLEClient>, BLEError> {
+    timer: &mut EspAsyncTimer,
+) -> anyhow::Result<Box<BLEClient>> {
     let address = peer.as_be_bytes();
+    // Boxed: NimBLE keeps a pointer to the client, so it must not move once connecting.
     let mut client = Box::new(device.new_client());
     {
         let tx = tx.clone();
@@ -211,27 +224,43 @@ async fn connect(
             send(&tx, Input::Disconnected(address));
         });
     }
-    client.connect(&peer).await?;
+    match select(set_up(&mut client, peer, tx), timer.after(CONNECT_TIMEOUT)).await {
+        Either::First(Ok(())) => Ok(client),
+        Either::First(Err(err)) => {
+            // Dropping a connected client detaches its callbacks; a failed connect left none.
+            let _ = client.disconnect();
+            Err(anyhow::anyhow!("{err:?}"))
+        }
+        Either::Second(_) => {
+            // SAFETY: plain NimBLE host call; it fails harmlessly if no attempt is pending.
+            unsafe {
+                esp_idf_svc::sys::ble_gap_conn_cancel();
+            }
+            let _ = client.disconnect();
+            // NimBLE may still deliver this attempt's events to the client, so it must outlive
+            // them: leak it. A few hundred bytes, only when a connect hangs.
+            Box::leak(client);
+            Err(anyhow::anyhow!(
+                "timed out after {} s",
+                CONNECT_TIMEOUT.as_secs()
+            ))
+        }
+    }
+}
 
-    let subscribed = async {
-        let tx = tx.clone();
-        client
-            .get_service(FTMS_SERVICE)
-            .await?
-            .get_characteristic(TREADMILL_DATA)
-            .await?
-            .on_notify(move |data| send(&tx, Input::TreadmillData(data.to_vec())))
-            // With response: the CCCD must be written with a Write Request, and a Write Command
-            // (no response) can be silently ignored: the FS-4C02A8 sent no data after one.
-            .subscribe_notify(true)
-            .await
-    }
-    .await;
-    if let Err(err) = subscribed {
-        let _ = client.disconnect();
-        return Err(err);
-    }
-    Ok(client)
+async fn set_up(client: &mut BLEClient, peer: BLEAddress, tx: &Sender) -> Result<(), BLEError> {
+    client.connect(&peer).await?;
+    let tx = tx.clone();
+    client
+        .get_service(FTMS_SERVICE)
+        .await?
+        .get_characteristic(TREADMILL_DATA)
+        .await?
+        .on_notify(move |data| send(&tx, Input::TreadmillData(data.to_vec())))
+        // With response: the CCCD must be written with a Write Request, and a Write Command
+        // (no response) can be silently ignored: the FS-4C02A8 sent no data after one.
+        .subscribe_notify(true)
+        .await
 }
 
 fn is_ftms(data: &BLEAdvertisedData<&[u8]>) -> bool {

@@ -667,6 +667,7 @@ name = "firmware"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "embassy-futures",
  "embuild",
  "engine",
  "esp-idf-svc",
