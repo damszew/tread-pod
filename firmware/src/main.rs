@@ -2,12 +2,13 @@
 //!
 //! BLE callbacks and the central thread send [`Input`]s over a channel; the main loop hands them
 //! to the [`Session`] with a timestamp, ticks it every 100 ms, and carries out the actions it
-//! returns. All decisions live in `engine`; this crate only moves bytes. The button, LED and
-//! config mode come next; see docs/architecture.md.
+//! returns. All decisions live in `engine`; this crate only moves bytes. The button and config
+//! mode come next; see docs/architecture.md.
 
 mod central;
 mod footpod;
 mod input;
+mod led;
 
 use std::{
     sync::mpsc::{self, RecvTimeoutError},
@@ -18,10 +19,13 @@ use engine::{
     config::Config,
     session::{Action, Event, Link, Session},
 };
-use esp_idf_svc::nvs::{EspDefaultNvsPartition, EspNvs, NvsDefault};
+use esp_idf_svc::{
+    hal::peripherals::Peripherals,
+    nvs::{EspDefaultNvsPartition, EspNvs, NvsDefault},
+};
 use esp32_nimble::BLEDevice;
 
-use crate::{central::Central, footpod::Footpod, input::Input};
+use crate::{central::Central, footpod::Footpod, input::Input, led::Led};
 
 const NVS_NAMESPACE: &str = "tread-pod";
 const NVS_CONFIG_KEY: &str = "config";
@@ -37,6 +41,10 @@ fn main() -> anyhow::Result<()> {
     let mut nvs = EspNvs::new(EspDefaultNvsPartition::take()?, NVS_NAMESPACE, true)?;
     let config = load_config(&nvs);
     log::info!("tread-pod starting with {config:?}");
+
+    let peripherals = Peripherals::take()?;
+    // XIAO ESP32-S3 user LED.
+    let mut led = Led::new(peripherals.pins.gpio21)?;
 
     let (tx, rx) = mpsc::channel::<Input>();
     let device = BLEDevice::take();
@@ -65,6 +73,7 @@ fn main() -> anyhow::Result<()> {
             actions.extend(session.handle(now_ms, Event::Tick));
         }
         log_link_change(&mut link, session.link());
+        led.show(session.link(), now_ms);
         for action in actions {
             match action {
                 Action::Connect(address) => {

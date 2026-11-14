@@ -140,7 +140,9 @@ the PC without flashing the board.
 - **Config:** postcard blob in NVS.
 - **Button:** short press cycles treadmills, long press enters config mode, very long press does
   a factory reset.
-- **LED:** shows the selection/session state.
+- **LED** (`led.rs`, XIAO user LED on GPIO21, active low): the treadmill link only, since the
+  watch shows its own connection. Off: no watch listening; slow blink: looking for a treadmill;
+  fast blink: connecting or waiting for first data; on: forwarding.
 - **Config mode only:** Wi-Fi soft AP + captive DNS, serving the `api` router and the web UI.
   Wi-Fi is off during runs.
 - **Web assets:** `build.rs` gzips `crates/web/dist` (the Trunk output: `index.html`, JS glue and
