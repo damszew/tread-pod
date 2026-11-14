@@ -16,3 +16,5 @@ CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
 # Watch + treadmill, plus one spare for a second phone or watch poking at the footpod.
 CONFIG_BT_NIMBLE_MAX_CONNECTIONS=3
 CONFIG_BT_NIMBLE_HOST_TASK_STACK_SIZE=6144
+# NimBLE logs every GAP procedure at info, twice a second while scanning.
+CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y

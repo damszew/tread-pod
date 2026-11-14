@@ -7,12 +7,13 @@
 //! rules out one endless scan.
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     sync::{
         Arc, Mutex,
         mpsc::{self, Receiver},
     },
     thread,
+    time::{Duration, Instant},
 };
 
 use engine::config::Address;
@@ -32,6 +33,8 @@ const SCAN_WINDOW_MS: i32 = 500;
 /// Scan duty cycle: listen 30 ms of every 100 ms, leaving the radio to the two connections.
 const SCAN_INTERVAL_MS: u16 = 100;
 const SCAN_LISTEN_MS: u16 = 30;
+/// How often to log what scanning saw.
+const SCAN_SUMMARY: Duration = Duration::from_secs(10);
 
 enum Command {
     Connect(Address),
@@ -85,6 +88,11 @@ async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Optio
         .window(SCAN_LISTEN_MS);
     // Treadmills seen, with their address type: many use random static addresses.
     let mut known: HashMap<Address, BLEAddress> = HashMap::new();
+    // Treadmills whose name has been logged.
+    let mut named: HashSet<Address> = HashSet::new();
+    // Every advertiser seen since the last summary, to tell "no treadmill" from "scan sees nothing".
+    let mut heard: HashSet<Address> = HashSet::new();
+    let mut summary_at = Instant::now() + SCAN_SUMMARY;
     let mut wanted: Option<Address> = None;
     // Boxed: NimBLE keeps a pointer to the client, so it must not move once connected.
     let mut link: Option<(Address, Box<BLEClient>)> = None;
@@ -147,10 +155,18 @@ async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Optio
         let result = scan
             .start(device, SCAN_WINDOW_MS, |dev, data| {
                 let address = dev.addr().as_be_bytes();
+                heard.insert(address);
                 // Scan responses carry the name but usually not the service list.
                 if is_ftms(&data) || known.contains_key(&address) {
-                    known.insert(address, dev.addr());
+                    if known.insert(address, dev.addr()).is_none() {
+                        log::info!("treadmill seen: {} ({} dBm)", fmt(address), dev.rssi());
+                    }
                     let name = data.name().map(|n| String::from_utf8_lossy(n).into_owned());
+                    if let Some(name) = &name
+                        && named.insert(address)
+                    {
+                        log::info!("treadmill {} is {name:?}", fmt(address));
+                    }
                     send(
                         tx,
                         Input::Adv {
@@ -166,6 +182,16 @@ async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Optio
         if let Err(err) = result {
             log::warn!("scan: {err:?}");
             FreeRtos::delay_ms(100);
+        }
+        if Instant::now() >= summary_at {
+            summary_at += SCAN_SUMMARY;
+            log::info!(
+                "scan: {} advertisers in the last {} s, {} treadmills known",
+                heard.len(),
+                SCAN_SUMMARY.as_secs(),
+                known.len()
+            );
+            heard.clear();
         }
     }
 }

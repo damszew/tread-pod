@@ -16,7 +16,7 @@ use std::{
 
 use engine::{
     config::Config,
-    session::{Action, Event, Session},
+    session::{Action, Event, Link, Session},
 };
 use esp_idf_svc::nvs::{EspDefaultNvsPartition, EspNvs, NvsDefault};
 use esp32_nimble::BLEDevice;
@@ -46,6 +46,7 @@ fn main() -> anyhow::Result<()> {
     let mut session = Session::new(config);
     let start = Instant::now();
     let mut last_tick = start;
+    let mut link = session.link();
     loop {
         let input = match rx.recv_timeout(TICK) {
             Ok(input) => Some(input),
@@ -63,6 +64,7 @@ fn main() -> anyhow::Result<()> {
             last_tick = now;
             actions.extend(session.handle(now_ms, Event::Tick));
         }
+        log_link_change(&mut link, session.link());
         for action in actions {
             match action {
                 Action::Connect(address) => {
@@ -81,6 +83,29 @@ fn main() -> anyhow::Result<()> {
             }
         }
     }
+}
+
+/// Logs session link changes, so the log shows where a run is stuck: scanning without a
+/// treadmill, connecting, or connected without data.
+fn log_link_change(last: &mut Link, now: Link) {
+    let state = |l: &Link| match l {
+        Link::Idle => "idle (no watch)".to_string(),
+        Link::Scanning { .. } => "looking for a treadmill".to_string(),
+        Link::Connecting { address, .. } => format!("connecting to {}", central::fmt(*address)),
+        Link::Connected {
+            address,
+            last_data: None,
+            ..
+        } => format!("connected to {}, waiting for data", central::fmt(*address)),
+        Link::Connected { address, .. } => {
+            format!("forwarding from {}", central::fmt(*address))
+        }
+    };
+    let (before, after) = (state(last), state(&now));
+    if before != after {
+        log::info!("session: {after}");
+    }
+    *last = now;
 }
 
 /// Loads the config, falling back to defaults if it's missing, corrupt or from another version.
