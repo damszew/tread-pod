@@ -3,6 +3,8 @@ name = "web"
 description = "tread-pod config UI (Leptos, client-side rendered, built with Trunk)"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
 publish = false
 
 [dependencies]

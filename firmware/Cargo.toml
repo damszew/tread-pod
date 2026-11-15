@@ -3,6 +3,8 @@ name = "firmware"
 description = "tread-pod bridge firmware for the Seeed XIAO ESP32-S3"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/damszew/tread-pod"
 publish = false
 
 # Not part of the root workspace: this builds with the Xtensa `esp` toolchain (see

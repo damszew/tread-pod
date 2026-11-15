@@ -3,6 +3,8 @@ name = "ftms-sniff"
 description = "Spike: capture raw FTMS notifications from a treadmill as engine test fixtures"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+repository.workspace = true
 publish = false
 
 [dependencies]
