@@ -30,8 +30,10 @@ Design details live in [architecture.md](architecture.md); user-facing behaviour
 ### CI
 - [x] `devenv test` (all git hooks, then `check`) on every push and PR
 
-### Docs
+### Project
 - [x] Architecture overview, user guide, README
+- [x] MIT license
+- [x] Hosted on GitHub, with a description and topics
 
 ## Next
 
@@ -49,8 +51,7 @@ Design details live in [architecture.md](architecture.md); user-facing behaviour
 - [ ] CI: firmware build and merged image
 - [ ] CI: web build and bundle size
 - [ ] Browser flasher on GitHub Pages
-- [ ] License file
-- [ ] Push to a public repository
+- [ ] Make the GitHub repository public
 
 ### Features
 - [ ] Send total distance in RSC
