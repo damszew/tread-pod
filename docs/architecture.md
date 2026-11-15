@@ -231,13 +231,7 @@ Everything is written from the Bluetooth SIG specifications (FTMS, RSC, BAS).
 
 ## Roadmap
 
-0. **Spikes:** capture the treadmill's FTMS data (`ftms-sniff`). Run a minimal RSC peripheral
-   sending a fixed speed to the watch (`rsc-fixed`). Measure RSSI separation between adjacent
-   treadmills (`rssi-survey`). Decide between Tokio and Embassy on ESP-IDF.
-1. **`engine` + `firmware` working end to end.**
-2. **Button and LED:** cycle / config mode / factory reset, LED states.
-3. **Web config UI + browser flashing.**
-4. **Battery, enclosure, field testing in a real gym.**
+See [roadmap.md](roadmap.md) for what's done and what's next.
 
 ## Open questions
 

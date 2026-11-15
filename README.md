@@ -5,3 +5,4 @@ indoor runs record the treadmill's real pace and distance.
 
 - [User guide](docs/user-guide.md): setup, the light, everyday use and troubleshooting.
 - [Architecture](docs/architecture.md): how it's built, for contributors.
+- [Roadmap](docs/roadmap.md): what's done and what's next.
