@@ -27,6 +27,9 @@ Design details live in [architecture.md](architecture.md); user-facing behaviour
 - [x] Config API types and router, with a dev server
 - [x] Leptos web UI built with Trunk
 
+### CI
+- [x] `devenv test` (all git hooks, then `check`) on every push and PR
+
 ### Docs
 - [x] Architecture overview, user guide, README
 
@@ -43,7 +46,8 @@ Design details live in [architecture.md](architecture.md); user-facing behaviour
 - [ ] Pin a treadmill from the web UI
 
 ### Release
-- [ ] CI: checks, firmware build, web bundle size
+- [ ] CI: firmware build and merged image
+- [ ] CI: web build and bundle size
 - [ ] Browser flasher on GitHub Pages
 - [ ] License file
 - [ ] Push to a public repository

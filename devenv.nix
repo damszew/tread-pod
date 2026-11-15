@@ -128,7 +128,8 @@ in
     };
   };
 
-  processes = {
+  # `devenv test` would otherwise start these dev servers around `enterTest`.
+  processes = lib.mkIf (!config.devenv.isTesting) {
     api-dev.exec = "cargo run -p api --example dev_server --features dev-server";
     trunk.exec = "cd crates/web && trunk serve --offline";
   };

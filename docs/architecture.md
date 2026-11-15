@@ -206,9 +206,12 @@ flake is an open question (see below).
 
 ## CI and flashing
 
-- `ci.yml`: `check` and `web-build`, and reports the gzipped web bundle size.
-- `firmware.yml`: `web-build`, `esp-setup`, `fw-build`, `fw-image`; uploads the merged image.
-- `pages.yml`: publishes `flasher/` (a static HTML page loading ESP Web Tools), `manifest.json`
+- `ci.yml` (in place): installs Nix and devenv (with the `devenv` Cachix cache), caches cargo with
+  `rust-cache`, then runs `devenv test` (every git hook on all files, then `check`) on pushes to
+  `main` and on PRs. Planned:
+  `web-build` and reporting the gzipped web bundle size.
+- `firmware.yml` (planned): `web-build`, `esp-setup`, `fw-build`, `fw-image`; uploads the merged image.
+- `pages.yml` (planned): publishes `flasher/` (a static HTML page loading ESP Web Tools), `manifest.json`
   and the merged image to GitHub Pages, for flashing from the browser. ESP Web Tools is used as a
   ready-made component; we don't write any JavaScript for it.
 
