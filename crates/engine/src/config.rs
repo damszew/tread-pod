@@ -14,8 +14,8 @@ pub struct Config {
     pub version: u8,
     /// Always use this treadmill instead of auto-picking the nearest one.
     pub pinned: Option<Address>,
-    /// Send estimated cadence in RSC notifications. Off by default: estimated cadence can skew
-    /// Garmin running dynamics.
+    /// Send cadence and stride length estimated from speed (see [`crate::cadence`]). On by
+    /// default: with it off the footpod sends 0, and Garmin records 0 spm rather than wrist cadence.
     pub cadence: bool,
 }
 
@@ -47,7 +47,7 @@ impl Default for Config {
         Self {
             version: Self::VERSION,
             pinned: None,
-            cadence: false,
+            cadence: true,
         }
     }
 }

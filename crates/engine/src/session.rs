@@ -22,6 +22,7 @@
 use heapless::Vec;
 
 use crate::{
+    cadence,
     config::{Address, Config},
     ftms::{Reassembler, TreadmillData},
     rsc::{Encoded, Feature, Measurement},
@@ -140,9 +141,14 @@ impl Session {
         }
     }
 
-    /// The RSC Feature value: none of the optional fields are sent.
+    /// The RSC Feature value: stride length is the only optional field. It is read once at
+    /// pairing, so it is offered even while [`Config::cadence`] is off; the measurements then
+    /// simply leave it out.
     pub fn rsc_feature() -> Feature {
-        Feature::default()
+        Feature {
+            stride_length: true,
+            ..Feature::default()
+        }
     }
 
     pub fn config(&self) -> &Config {
@@ -344,8 +350,16 @@ impl Session {
         if now_ms < subscribed + NOTIFY_DELAY_MS {
             return;
         }
+        let speed = self.speed(now_ms);
+        let estimate = self
+            .config
+            .cadence
+            .then(|| cadence::estimate(speed))
+            .flatten();
         let measurement = Measurement {
-            speed: self.speed(now_ms).into(),
+            speed: speed.into(),
+            cadence: estimate.map_or(0, |e| e.strides_per_minute),
+            stride_length: estimate.map(|e| e.stride_length),
             ..Measurement::default()
         };
         emit(out, Action::NotifyRsc(measurement.encode()));

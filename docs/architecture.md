@@ -85,7 +85,8 @@ Modules:
 | `ftms::treadmill_data` | Flag-driven parser covering every optional field |
 | `ftms::reassembly` | Merges notifications split with the "More Data" flag |
 | `rsc::measurement` | RSC Measurement (`0x2A53`) encoder |
-| `rsc::feature` | RSC Feature (`0x2A54`) bits (cadence has none: it is always sent, 0 when off) |
+| `rsc::feature` | RSC Feature (`0x2A54`) bits (cadence has none: it is always sent; stride length is offered) |
+| `cadence` | Cadence and stride length estimated from speed: one generic walking/running curve, sent as strides (two steps) |
 | `speed` | 0.01 km/h → 1/256 m/s, rounded **up**; speed derived from total distance (10 s window) |
 | `selection` | Candidate list (discovery order, smoothed RSSI, 10 s expiry), strongest / next pick |
 | `session` | Top-level machine: link state (Idle → Scanning → Connecting → Connected), target, watch gating, notify delay/heartbeat, button, API |
@@ -223,7 +224,8 @@ flake is an open question (see below).
 | Some Garmins need a Battery Service to pair | `firmware` GATT setup |
 | Some treadmills don't report instantaneous speed | `engine::speed` (derive from total distance) |
 | Pace must never read slower than the treadmill | `engine::speed` (round up to the next 1/256 m/s) |
-| Estimated cadence can skew running dynamics | `engine::config` (cadence optional, off by default) |
+| Garmin records a footpod cadence of 0 as 0 spm (no wrist fallback), zeroing power and running dynamics. The footpod's cadence also wins over an HRM 600's: Garmin doesn't merge them | `engine::cadence` (estimate from speed, on by default; `Config::cadence` turns it off) |
+| Garmin reads RSC cadence as strides per minute and doubles it; it shows speed ÷ cadence as stride length | `engine::cadence` (send half the steps, and a full two-step stride) |
 | Footpod address must stay the same across reboots | `firmware` (fixed address from the eFuse base MAC; survives factory reset) |
 
 ## Clean-room policy

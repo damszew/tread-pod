@@ -6,7 +6,7 @@
 //! |---|---|---|---|
 //! | flags | `u8` | | always |
 //! | instantaneous speed | `u16` | 1/256 m/s | always |
-//! | instantaneous cadence | `u8` | 1/min | always |
+//! | instantaneous cadence | `u8` | strides/min (Garmin doubles it to steps) | always |
 //! | instantaneous stride length | `u16` | 1/100 m | flag bit 0 |
 //! | total distance | `u32` | 1/10 m | flag bit 1 |
 //!
@@ -20,7 +20,7 @@ use crate::speed::RscSpeed;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Measurement {
     pub speed: RscSpeed,
-    /// Steps per minute; 0 when cadence is off.
+    /// Strides (two steps) per minute; Garmin shows twice this as steps. 0 when cadence is off.
     pub cadence: u8,
     /// 1/100 m.
     pub stride_length: Option<u16>,

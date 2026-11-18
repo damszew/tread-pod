@@ -60,9 +60,14 @@ Cadence is a mandatory RSC field, so it cannot be left out.
 
 1. Estimate from speed, kept as simple as possible: one fixed curve for everyone, no settings.
    It only has to beat 0 spm until the accelerometer works.
-   - [ ] Fixed speed-to-cadence curve, with a separate walking range below about 6–7 km/h
-   - [ ] Send stride length (speed ÷ cadence)
-   - [ ] Fix the docs that say the watch falls back to wrist cadence
+   - [x] Fixed speed-to-cadence curve, with a separate walking range below about 6–7 km/h
+   - [x] Send stride length (speed ÷ cadence)
+   - [x] Fix the docs that say the watch falls back to wrist cadence
+   - [x] Check on a run: running power came back, but Garmin showed twice the cadence (it reads
+     RSC cadence as strides per minute) and worked out stride length from that
+   - [x] Send cadence as strides per minute and stride length as a full two-step stride
+   - [ ] Check on a run: cadence matches the curve, stride length looks like a step, and walking
+     breaks count as walking again
 2. Measure with an accelerometer (the main focus once the estimate lands)
    - [ ] Pick a sensor: Grove LSM6DS3 and the Grove Shield for XIAO on the current board, or the
      onboard IMU if the board changes (see Platform)

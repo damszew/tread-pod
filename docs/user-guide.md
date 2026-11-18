@@ -82,7 +82,13 @@ tread-pod picks the treadmill with the strongest signal when your watch starts u
 
 - **Unplugging is safe.** You can unplug tread-pod at any time. Your watch stays paired, and the
   pairing survives power cuts.
-- **Cadence (steps per minute)** comes from your watch, not from tread-pod.
+- **Cadence (steps per minute) and stride length are estimates** worked out from the belt speed,
+  using one curve for everyone. Expect them to be a few steps per minute off for very tall or
+  short runners. Your watch uses the foot pod's cadence instead of its own, so without an
+  estimate it would record 0.
+- **A chest strap with running dynamics (such as the HRM 600) doesn't change the cadence.** The
+  watch doesn't combine the two: it records the foot pod's estimated cadence even when the strap is
+  measuring yours.
 - **Firmware version and serial number** are shown on your watch in the foot pod's details
   (on Garmin: select the sensor, then **About**). If they're missing after an update, remove the
   foot pod from the watch and pair it again.

@@ -1,8 +1,8 @@
 //! RSC Feature (`0x2A54`): a `u16` bit field the watch reads once to learn which optional
 //! RSC Measurement fields to expect.
 //!
-//! Cadence has no bit: it is mandatory in every measurement. With cadence off the footpod sends
-//! 0, and the watch falls back to its own wrist cadence.
+//! Cadence has no bit: it is mandatory in every measurement. A Garmin records a 0 as 0 spm; it
+//! does not fall back to wrist cadence.
 
 /// Supported RSC features. Calibration (bit 3) and multiple sensor locations (bit 4) are never
 /// offered: the footpod has nothing to calibrate and a single location.

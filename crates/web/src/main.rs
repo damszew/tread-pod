@@ -132,10 +132,10 @@ fn SettingsForm() -> impl IntoView {
                                             });
                                         }
                                     />
-                                    " Send estimated cadence"
+                                    " Send estimated cadence and stride length"
                                 </label>
                                 <p class="muted">
-                                    "Off by default: estimated cadence can skew running dynamics."
+                                    "On by default. Turned off, the watch records a cadence of 0."
                                 </p>
                             }
                                 .into_any()

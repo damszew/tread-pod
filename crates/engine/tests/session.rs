@@ -348,3 +348,60 @@ fn fs_4c02a8_replay() {
     assert!(speeds.contains(&rsc(80)));
     assert_eq!(speeds.last(), Some(&0));
 }
+
+/// The cadence byte and stride length (1/100 m) of a notification.
+fn cadence_and_stride(action: &Action) -> Option<(u8, Option<u16>)> {
+    match action {
+        Action::NotifyRsc(m) => {
+            let stride = (m[0] & 0x01 != 0).then(|| u16::from_le_bytes([m[4], m[5]]));
+            Some((m[3], stride))
+        }
+        _ => None,
+    }
+}
+
+#[test]
+fn estimated_cadence_and_stride_follow_the_speed() {
+    let mut sim = Sim::new();
+    sim.connect(A);
+    sim.run(NOTIFY_DELAY_MS);
+    let actions = sim.ev(Event::TreadmillData(&speed_only(850)));
+    let expected = engine::cadence::estimate(FtmsSpeed(850)).unwrap();
+    assert_eq!(
+        actions
+            .iter()
+            .filter_map(cadence_and_stride)
+            .collect::<Vec<_>>(),
+        [(expected.strides_per_minute, Some(expected.stride_length))]
+    );
+
+    // standing still: cadence 0, no stride length
+    let actions = sim.ev(Event::TreadmillData(&speed_only(0)));
+    assert_eq!(
+        actions
+            .iter()
+            .filter_map(cadence_and_stride)
+            .collect::<Vec<_>>(),
+        [(0, None)]
+    );
+}
+
+#[test]
+fn cadence_off_sends_zero_and_no_stride() {
+    let mut sim = Sim::with(Config {
+        cadence: false,
+        ..Config::default()
+    });
+    sim.connect(A);
+    sim.run(NOTIFY_DELAY_MS);
+    let actions = sim.ev(Event::TreadmillData(&speed_only(850)));
+    assert_eq!(
+        actions
+            .iter()
+            .filter_map(cadence_and_stride)
+            .collect::<Vec<_>>(),
+        [(0, None)]
+    );
+    // the feature still offers stride length: it is read once, at pairing
+    assert_eq!(Session::rsc_feature().encode(), [0x01, 0x00]);
+}
