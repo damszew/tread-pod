@@ -136,6 +136,9 @@ the PC without flashing the board.
   the full crate version + commit (from `build.rs`) is the Software Revision. The PnP ID uses the
   pid.codes vendor (`0x1209`) with a test product ID. Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
   and the chip's public address, which comes from the eFuse base MAC and so never changes.
+  One watch at a time: advertising stops when a watch connects and resumes only when it leaves,
+  so a second watch nearby can't take the footpod mid-run. NimBLE allows 2 connections in total
+  (the treadmill and the watch) as a backstop.
   Watch subscription is tracked per connection: the first subscriber sends `WatchSubscribed`, the
   last unsubscribe or disconnect sends `WatchUnsubscribed`.
 - **Central** (`central.rs`): its own thread, since esp32-nimble scan and connect calls block.

@@ -127,7 +127,16 @@ impl Footpod {
         }
         log::info!("device info: {MODEL}, firmware {FIRMWARE} ({SOFTWARE}), serial {serial}");
 
-        server.on_connect(|_, desc| log::info!("watch connected: {}", desc.address()));
+        // One central at a time: NimBLE stops advertising when a central connects, and
+        // esp32-nimble restarts it only on disconnect (`advertise_on_disconnect`). Don't restart
+        // it here: a second watch nearby could then take the footpod mid-run and record another
+        // runner's treadmill. sdkconfig caps connections at 2 (treadmill + this one) as a backstop.
+        server.on_connect(|_, desc| {
+            log::info!(
+                "watch connected: {}; not advertising until it leaves",
+                desc.address()
+            );
+        });
         server.on_disconnect(move |desc, reason| {
             log::info!("watch disconnected: {} ({reason:?})", desc.address());
             let mut set = subscribed.lock().unwrap();
