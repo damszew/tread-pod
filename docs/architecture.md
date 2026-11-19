@@ -91,6 +91,7 @@ Modules:
 | `speed` | 0.01 km/h → 1/256 m/s, rounded **up**; speed derived from total distance (10 s window) |
 | `selection` | Candidate list (discovery order, smoothed RSSI, 10 s expiry), strongest / next pick |
 | `session` | Top-level machine: link state (Idle → Scanning → Connecting → Connected), target, watch gating, notify delay/heartbeat, button, API |
+| `watch` | Which watch may connect: the RSC subscriber owns the footpod, and keeps it for 2 min after a lost link |
 | `config` | `Config { version, pinned, cadence, … }`, serde + postcard |
 
 Tests:
@@ -136,8 +137,11 @@ the PC without flashing the board.
   the full crate version + commit (from `build.rs`) is the Software Revision. The PnP ID uses the
   pid.codes vendor (`0x1209`) with a test product ID. Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
   and the chip's public address, which comes from the eFuse base MAC and so never changes.
-  One watch at a time: advertising stops when a watch connects and resumes only when it leaves,
-  so a second watch nearby can't take the footpod mid-run. NimBLE allows 2 connections in total
+  One watch at a time: advertising stops when a watch connects, and only the main loop restarts
+  it, once the watch has left, so a second watch nearby can't take the footpod mid-run. If the
+  watch in a workout loses its link (any reason but a deliberate disconnect), `engine::watch`
+  keeps the footpod for it for 2 minutes: advertising runs with a connect allowlist holding only
+  that watch, and any other central that gets in is dropped. NimBLE allows 2 connections in total
   (the treadmill and the watch) as a backstop.
   Watch subscription is tracked per connection: the first subscriber sends `WatchSubscribed`, the
   last unsubscribe or disconnect sends `WatchUnsubscribed`.

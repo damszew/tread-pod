@@ -10,9 +10,12 @@ use std::{
     sync::{Arc, Mutex as StdMutex},
 };
 
+use engine::config::Address;
 use engine::session::Session;
 use esp32_nimble::{
-    BLEAdvertisementData, BLECharacteristic, BLEDevice, NimbleProperties, NimbleSub,
+    BLEAddress, BLEAdvertisementData, BLECharacteristic, BLEDevice, BLEError, NimbleProperties,
+    NimbleSub,
+    enums::AdvFilterPolicy,
     utilities::{BleUuid, mutex::Mutex},
 };
 
@@ -88,7 +91,7 @@ impl Footpod {
                     set.remove(&desc.conn_handle());
                 }
                 log::info!("watch {} notifications: {sub:?}", desc.address());
-                notify_change(&tx, was_empty, set.is_empty());
+                notify_change(&tx, address(desc.address()), was_empty, set.is_empty());
             });
         }
         rsc.lock()
@@ -127,22 +130,42 @@ impl Footpod {
         }
         log::info!("device info: {MODEL}, firmware {FIRMWARE} ({SOFTWARE}), serial {serial}");
 
-        // One central at a time: NimBLE stops advertising when a central connects, and
-        // esp32-nimble restarts it only on disconnect (`advertise_on_disconnect`). Don't restart
-        // it here: a second watch nearby could then take the footpod mid-run and record another
-        // runner's treadmill. sdkconfig caps connections at 2 (treadmill + this one) as a backstop.
-        server.on_connect(|_, desc| {
-            log::info!(
-                "watch connected: {}; not advertising until it leaves",
-                desc.address()
-            );
-        });
+        // One central at a time: NimBLE stops advertising when a central connects, and only the
+        // main loop starts it again (see `advertise`), once it knows who may connect next. Never
+        // restart it here: a second watch nearby could take the footpod mid-run and record
+        // another runner's treadmill. sdkconfig caps connections at 2 (treadmill + this one) as a
+        // backstop.
+        server.advertise_on_disconnect(false);
+        {
+            let tx = tx.clone();
+            server.on_connect(move |_, desc| {
+                log::info!(
+                    "watch connected: {}; not advertising until it leaves",
+                    desc.address()
+                );
+                send(
+                    &tx,
+                    Input::WatchConnected {
+                        conn: desc.conn_handle(),
+                        address: desc.address(),
+                    },
+                );
+            });
+        }
         server.on_disconnect(move |desc, reason| {
             log::info!("watch disconnected: {} ({reason:?})", desc.address());
+            let watch = address(desc.address());
             let mut set = subscribed.lock().unwrap();
             let was_empty = set.is_empty();
             set.remove(&desc.conn_handle());
-            notify_change(&tx, was_empty, set.is_empty());
+            notify_change(&tx, watch, was_empty, set.is_empty());
+            send(
+                &tx,
+                Input::WatchDisconnected {
+                    address: watch,
+                    reason: hci_reason(reason),
+                },
+            );
         });
 
         let mut advertising = device.get_advertising().lock();
@@ -160,6 +183,41 @@ impl Footpod {
 
     pub fn notify(&self, measurement: &[u8]) {
         self.measurement.lock().set_value(measurement).notify();
+    }
+
+    /// (Re)starts advertising. With `only`, just that watch may connect (it still shows to
+    /// everyone, but the controller refuses other connections); with `None`, anyone may.
+    pub fn advertise(only: Option<BLEAddress>) -> Result<(), BLEError> {
+        let device = BLEDevice::take();
+        let mut advertising = device.get_advertising().lock();
+        if advertising.is_advertising() {
+            advertising.stop()?;
+        }
+        // The allowlist can only change while nothing uses it.
+        match only {
+            Some(watch) => {
+                device.set_white_list(&[watch])?;
+                advertising.filter_policy(AdvFilterPolicy::Connect);
+            }
+            None => {
+                device.set_white_list(&[])?;
+                advertising.filter_policy(AdvFilterPolicy::None);
+            }
+        }
+        advertising.start()
+    }
+
+    /// Whether a central holds the footpod, as NimBLE sees it. Set before `WatchConnected`
+    /// reaches the main loop.
+    pub fn has_central() -> bool {
+        BLEDevice::take().get_server().connected_count() > 0
+    }
+
+    /// Drops a central that must not hold the footpod.
+    pub fn drop_central(conn: u16) {
+        if let Err(err) = BLEDevice::take().get_server().disconnect(conn) {
+            log::warn!("dropping central {conn}: {err:?}");
+        }
     }
 }
 
@@ -184,9 +242,25 @@ fn pnp_id() -> [u8; 7] {
     [PNP_VENDOR_SOURCE_USB, v0, v1, p0, p1, r0, r1]
 }
 
-fn notify_change(tx: &Sender, was_empty: bool, is_empty: bool) {
+/// The address as the engine stores it, most significant byte first.
+pub fn address(address: BLEAddress) -> Address {
+    address.as_be_bytes()
+}
+
+/// The HCI reason behind a disconnect; 0 (unknown, treated as a lost link) if it isn't one.
+fn hci_reason(reason: Result<(), BLEError>) -> u8 {
+    let hci_base = esp_idf_svc::sys::BLE_HS_ERR_HCI_BASE;
+    match reason {
+        Err(err) if (hci_base..hci_base + 0x100).contains(&err.code()) => {
+            u8::try_from(err.code() - hci_base).unwrap_or(0)
+        }
+        _ => 0,
+    }
+}
+
+fn notify_change(tx: &Sender, watch: Address, was_empty: bool, is_empty: bool) {
     match (was_empty, is_empty) {
-        (true, false) => send(tx, Input::WatchSubscribed),
+        (true, false) => send(tx, Input::WatchSubscribed(watch)),
         (false, true) => send(tx, Input::WatchUnsubscribed),
         _ => {}
     }

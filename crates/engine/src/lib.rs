@@ -13,3 +13,4 @@ pub mod rsc;
 pub mod selection;
 pub mod session;
 pub mod speed;
+pub mod watch;
