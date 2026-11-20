@@ -23,6 +23,15 @@ Design details live in [architecture.md](architecture.md); user-facing behaviour
 - [x] Device Information (maker, model, firmware version, serial) shown on the watch
 - [x] Logs: treadmills seen, scan summaries, session state
 
+### Garmin Connect device list
+Garmin Connect lists the watch and HRM 600 after a run but not the footpod. `fit-inspect` on a run
+(2026-11-19) showed the watch records the footpod in the FIT file, but with no manufacturer,
+product or software version, and the hex serial cut to `44`: it parses these as numbers.
+- [x] `fit-inspect` tool to print a FIT activity's `device_info` records
+- [x] Decimal serial number, `major.minor` firmware revision, PnP ID (pid.codes test ID)
+- [ ] Check on a run: serial and software version recorded, and whether a manufacturer appears
+- [ ] If Connect still hides it, try ANT+ (common pages 80/81) once on the nRF52840
+
 ### Config UI (not yet on the device)
 - [x] Config API types and router, with a dev server
 - [x] Leptos web UI built with Trunk
