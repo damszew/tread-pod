@@ -49,7 +49,7 @@ All tooling comes from [devenv](https://devenv.sh), so you only need Nix and dev
 
 ```bash
 devenv shell -- check       # fmt, clippy, tests, no_std build of the engine
-devenv shell -- esp-setup   # once: install the Xtensa Rust toolchain into the project
+devenv shell -- esp-setup   # once per toolchain version: install the Xtensa Rust toolchain
 devenv shell -- fw-flash    # build, flash the board over USB, open the serial monitor
 ```
 

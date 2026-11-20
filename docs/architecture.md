@@ -196,14 +196,17 @@ Scripts:
 | `web-build` | `trunk build --release` into `crates/web/dist` |
 | `web-dev` | `api` dev server + `trunk serve` with `/api` proxied (also available via `devenv up`) |
 | `sniff` | runs `tools/ftms-sniff`, writes captures to `crates/engine/tests/fixtures/` |
-| `esp-setup` | `espup install` into `.devenv/state/esp` (separate `RUSTUP_HOME`/`CARGO_HOME`) |
+| `esp-setup` | `espup install` of the pinned toolchain into `~/.cache/tread-pod/esp` (separate `RUSTUP_HOME`/`CARGO_HOME`) |
 | `fw-build` / `fw-flash` | build / flash `firmware` |
 | `fw-image` | merged image via `espflash save-image --merge` |
 
-The Xtensa Rust toolchain is not in nixpkgs, so `esp-setup` uses espup and keeps the result inside
-the project. esp-idf-sys downloads ESP-IDF on its own into `firmware/.embuild`. Only the `fw-*`
-scripts use that toolchain; `check` stays fully reproducible by Nix. Replacing espup with a Nix
-flake is an open question (see below).
+The Xtensa Rust toolchain is not in nixpkgs, so `esp-setup` uses espup. Its version is pinned by the
+`esp-<version>` channel in `firmware/rust-toolchain.toml`. esp-idf-sys downloads ESP-IDF on its own
+(`ESP_IDF_VERSION` in `firmware/.cargo/config.toml`). Both go to a per-user cache,
+`${XDG_CACHE_HOME:-~/.cache}/tread-pod/esp`, keyed by version, so every checkout and git worktree
+shares one install and branches can still pin different versions. Only the `fw-*` scripts use that
+toolchain; `check` stays fully reproducible by Nix. Replacing espup with a Nix flake is an open
+question (see below).
 
 ## CI and flashing
 

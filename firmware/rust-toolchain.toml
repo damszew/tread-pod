@@ -1,3 +1,4 @@
-# Installed by `esp-setup` (espup) into .devenv/state/esp.
+# Installed by `esp-setup` (espup) into the shared ESP cache (~/.cache/tread-pod/esp). The
+# `esp-<version>` channel pins the espup toolchain version; bump it here to upgrade.
 [toolchain]
-channel = "esp"
+channel = "esp-1.97.0.0"

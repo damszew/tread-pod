@@ -6,15 +6,23 @@
 }:
 
 let
-  # The Xtensa (ESP32-S3) Rust toolchain is not in nixpkgs: `esp-setup` installs it with espup
-  # into project-local rustup/cargo homes, and only the `fw-*` scripts use it.
+  # The Xtensa (ESP32-S3) Rust toolchain is not in nixpkgs: `esp-setup` installs it with espup,
+  # and only the `fw-*` scripts use it. The toolchain and esp-idf-sys's ESP-IDF checkout live in a
+  # per-user cache shared by every checkout and git worktree. Both are keyed by version (the
+  # toolchain by the `esp-<version>` channel in firmware/rust-toolchain.toml, ESP-IDF by
+  # `ESP_IDF_VERSION` in firmware/.cargo/config.toml), so branches can pin different versions.
   espEnv = ''
-    export RUSTUP_HOME="$DEVENV_STATE/esp/rustup"
-    export CARGO_HOME="$DEVENV_STATE/esp/cargo"
+    ESP_SHARED="''${XDG_CACHE_HOME:-$HOME/.cache}/tread-pod/esp"
+    ESP_CHANNEL="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' "$DEVENV_ROOT/firmware/rust-toolchain.toml")"
+    ESP_TOOLCHAIN_VERSION="''${ESP_CHANNEL#esp-}"
+    export RUSTUP_HOME="$ESP_SHARED/rustup"
+    export CARGO_HOME="$ESP_SHARED/cargo"
+    export ESP_IDF_TOOLS_INSTALL_DIR="custom:$ESP_SHARED/embuild"
     export PATH="${pkgs.rustup}/bin:$CARGO_HOME/bin:$PATH"
     unset RUSTFLAGS RUSTDOCFLAGS RUSTC CARGO RUST_SRC_PATH
     # LIBCLANG_PATH etc. for bindgen, written by espup.
-    if [ -f "$DEVENV_STATE/esp/export-esp.sh" ]; then . "$DEVENV_STATE/esp/export-esp.sh"; fi
+    ESP_EXPORT="$ESP_SHARED/export-$ESP_CHANNEL.sh"
+    if [ -f "$ESP_EXPORT" ]; then . "$ESP_EXPORT"; fi
     # Build scripts are linked by the Nix toolchain, so their loader doesn't search /usr/lib;
     # espup's prebuilt libclang needs libstdc++ from somewhere.
     export LD_LIBRARY_PATH="${
@@ -84,15 +92,17 @@ in
     };
 
     esp-setup = {
-      description = "Install the Xtensa Rust toolchain (espup) into .devenv/state/esp";
+      description = "Install the pinned Xtensa Rust toolchain (espup) into the shared ESP cache";
       exec = ''
         set -e
         ${espEnv}
         mkdir -p "$RUSTUP_HOME" "$CARGO_HOME"
-        if rustup toolchain list | grep -q '^esp'; then
-          echo "esp toolchain already installed"
+        if rustup toolchain list | cut -d' ' -f1 | grep -qx "$ESP_CHANNEL"; then
+          echo "$ESP_CHANNEL already installed in $ESP_SHARED"
         else
-          espup install --targets esp32s3 --std --export-file "$DEVENV_STATE/esp/export-esp.sh"
+          espup install --targets esp32s3 --std \
+            --toolchain-version "$ESP_TOOLCHAIN_VERSION" --name "$ESP_CHANNEL" \
+            --export-file "$ESP_EXPORT"
         fi
       '';
     };
