@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795254083,"nonce":"/9Ec9VpwW+cVSHe7NVUlsPSvJYc=","added":["task","garmin-connect","firmware"],"removed":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":3,"timestamp":1795254083,"nonce":"cKtcZjZu9x70aOX2SN0GQjtdkx0=","message":"Done in fcfe5e7 (2026-11-20). Checking it on a run is 657be0c.","files":null}]}
