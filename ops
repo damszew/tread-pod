@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":1,"timestamp":1795254083,"nonce":"qWuWuNJHtrza241h8Z6x3+1oKQQ=","title":"CI: devenv test on every push and PR","message":"Run devenv test (all git hooks, then check) in CI on every push and pull request.","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795254083,"nonce":"K47KKnC7Jxa47OtH1NNnPFB7WhM=","added":["task","release"],"removed":null}]}
