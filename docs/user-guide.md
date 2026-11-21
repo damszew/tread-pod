@@ -66,11 +66,24 @@ tread-pod picks the treadmill with the strongest signal when your watch starts u
 - **It picked the wrong treadmill:** move tread-pod closer to the treadmill you want, then unplug it
   and plug it back in.
 
+## Sharing tread-pod with another watch
+
+tread-pod works with **one watch at a time**. While someone's watch is using it, no other watch can
+connect, so a second runner nearby can't take it over or record the wrong treadmill.
+
+- **If the connection drops mid-run**, tread-pod waits **2 minutes** for that same watch to come
+  back. Other watches can't connect during that time.
+- **When the activity ends**, tread-pod is free for any watch straight away.
+- **If two paired watches are in the same room**, turn the foot pod off on the watch that isn't
+  using the treadmill. On Garmin: **Settings → Sensors & Accessories → tread-pod → Status: Off**.
+  Otherwise, if both start an activity at the same moment, whichever connects first gets
+  tread-pod.
+
 ## Troubleshooting
 
 | Problem | Try this |
 |---|---|
-| Your watch can't find **tread-pod** | Check tread-pod has power. Bring the watch close to it. If the watch is already paired with tread-pod, it won't appear in the list again. |
+| Your watch can't find **tread-pod** | Check tread-pod has power. Bring the watch close to it. If the watch is already paired with tread-pod, it won't appear in the list again. If another watch is using it, finish that activity first (see [Sharing tread-pod](#sharing-tread-pod-with-another-watch)). |
 | Light keeps **blinking slowly** | tread-pod can't find a treadmill. Make sure the treadmill is on and its display is lit. **Close the treadmill's own app** on your phone: most treadmills accept only one connection. Move tread-pod closer to the treadmill. |
 | Light keeps **blinking fast**, or keeps switching between slow and fast | The signal is weak. **Check the antenna is attached** and clicked in. Move tread-pod closer to the treadmill console, and away from metal. |
 | Light is **on** but the watch shows no pace | Start the belt: pace only shows while it moves. Check the watch is using the foot pod, not GPS (see Speed Mode in [First-time setup](#first-time-setup)). |

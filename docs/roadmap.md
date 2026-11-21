@@ -23,6 +23,14 @@ Design details live in [architecture.md](architecture.md); user-facing behaviour
 - [x] Device Information (maker, model, firmware version, serial) shown on the watch
 - [x] Logs: treadmills seen, scan summaries, session state
 
+### Watch affinity
+One watch on the footpod at a time, so another paired watch nearby can't take it mid-run or
+record the wrong treadmill. Verified on the board with two watches (2026-11-21).
+- [x] One central at a time: no advertising while a watch or phone is connected
+- [x] Reconnect grace: after a lost link, only that watch may connect for 2 minutes
+- [x] Free at once when the watch ends the activity
+- [x] User guide: turn the sensor off on a second watch in the same room
+
 ### Garmin Connect device list
 Garmin Connect lists the watch and HRM 600 after a run but not the footpod. `fit-inspect` on a run
 (2026-11-19) showed the watch records the footpod in the FIT file, but with no manufacturer,
