@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":1,"timestamp":1795252398,"nonce":"uM0wrp83e26lGYA4eWizzDtCn9M=","title":"Try more treadmills and watches","message":"Test with more FTMS treadmills and more watches than the FS-4C02A8 and a Garmin.","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795252398,"nonce":"aecNSJZOSt+uL3i+5KXM7Dlw4FA=","added":["task","hardware"],"removed":null}]}
