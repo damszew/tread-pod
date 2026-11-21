@@ -35,7 +35,6 @@ tread-pod/
 ├── firmware/               # ESP32-S3 bridge; NOT a workspace member
 ├── tools/                  # spike tools, can be deleted later
 │   ├── ftms-sniff/
-│   ├── fit-inspect/        # prints device records from a Garmin FIT activity
 │   ├── rsc-fixed/
 │   └── rssi-survey/
 ├── flasher/                # static ESP Web Tools page (index.html + manifest template)
@@ -131,11 +130,8 @@ the PC without flashing the board.
   channel; the loop timestamps each one, passes it to `session.handle`, ticks the session every
   100 ms, and carries out the returned actions.
 - **Footpod** (`footpod.rs`): RSC service (Measurement notify, Feature read), Battery Service
-  (level 100) and Device Information (manufacturer, model, hardware, serial, firmware, software,
-  PnP ID). A Garmin parses serial and firmware as numbers into the activity's FIT `device_info`
-  record, so the serial is the low four address bytes in decimal and firmware is `major.minor`;
-  the full crate version + commit (from `build.rs`) is the Software Revision. The PnP ID uses the
-  pid.codes vendor (`0x1209`) with a test product ID. Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
+  (level 100) and Device Information (manufacturer, model, hardware, serial = the footpod address,
+  firmware = crate version + commit embedded by `build.rs`). Advertises name `tread-pod`, appearance Running Walking Sensor In-Shoe (`0x0441`),
   and the chip's public address, which comes from the eFuse base MAC and so never changes.
   One watch at a time: advertising stops when a watch connects, and only the main loop restarts
   it, once the watch has left, so a second watch nearby can't take the footpod mid-run. If the

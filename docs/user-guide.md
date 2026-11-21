@@ -105,6 +105,9 @@ connect, so a second runner nearby can't take it over or record the wrong treadm
 - **Firmware version and serial number** are shown on your watch in the foot pod's details
   (on Garmin: select the sensor, then **About**). If they're missing after an update, remove the
   foot pod from the watch and pair it again.
+- **Garmin Connect doesn't list tread-pod under an activity's devices.** It only shows sensors
+  it knows by manufacturer and product, which a Bluetooth sensor can't send. The run's pace and
+  distance still come from tread-pod.
 - **The watch works out distance from the speed.** On some treadmills, this can differ a little
   from the treadmill's own display.
 

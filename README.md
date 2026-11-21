@@ -70,7 +70,6 @@ repository itself and available in the devenv shell.
 | `crates/web` | Config web UI (Leptos), not yet served by the device |
 | `firmware` | ESP-IDF firmware for the XIAO ESP32-S3 |
 | `tools/ftms-sniff` | Records a treadmill's FTMS traffic as test fixtures |
-| `tools/fit-inspect` | Prints the device records of a Garmin FIT activity |
 
 ## Clean room
 

@@ -1,6 +1,6 @@
 //! The footpod the watch pairs with: an RSC sensor (`0x1814`), a Battery Service (`0x180F`),
 //! which some Garmins need before they pair, and Device Information (`0x180A`) for the watch's
-//! sensor details page and the activity's FIT `device_info` record.
+//! sensor details page.
 //!
 //! The identity never changes: the name is fixed and NimBLE advertises the chip's public address,
 //! derived from the eFuse base MAC, so it is the same after every reboot and factory reset.
@@ -39,29 +39,14 @@ const MODEL_NUMBER: BleUuid = BleUuid::from_uuid16(0x2a24);
 const SERIAL_NUMBER: BleUuid = BleUuid::from_uuid16(0x2a25);
 const FIRMWARE_REVISION: BleUuid = BleUuid::from_uuid16(0x2a26);
 const HARDWARE_REVISION: BleUuid = BleUuid::from_uuid16(0x2a27);
-const SOFTWARE_REVISION: BleUuid = BleUuid::from_uuid16(0x2a28);
 const MANUFACTURER_NAME: BleUuid = BleUuid::from_uuid16(0x2a29);
-const PNP_ID: BleUuid = BleUuid::from_uuid16(0x2a50);
 
 /// Shown by the watch under the sensor's "about" page.
 const MANUFACTURER: &str = "tread-pod";
 const MODEL: &str = "tread-pod FTMS bridge";
 const HARDWARE: &str = "Seeed XIAO ESP32-S3";
-/// Firmware Revision as a plain `major.minor` number. A Garmin parses this into the FIT
-/// `software_version` and records nothing for text like `0.1.0 (318e493)`.
-const FIRMWARE: &str = concat!(
-    env!("CARGO_PKG_VERSION_MAJOR"),
-    ".",
-    env!("CARGO_PKG_VERSION_MINOR")
-);
-/// Software Revision: the full crate version and commit, set by `build.rs`.
-const SOFTWARE: &str = env!("TREAD_POD_FIRMWARE_REVISION");
-
-/// PnP ID vendor: pid.codes, the USB vendor ID shared by open-source hardware (`0x02` = USB-IF
-/// vendor ID source). The product ID is one of pid.codes' test IDs until we register our own.
-const PNP_VENDOR_SOURCE_USB: u8 = 0x02;
-const PNP_VENDOR: u16 = 0x1209;
-const PNP_PRODUCT: u16 = 0x0001;
+/// Crate version and commit, set by `build.rs`.
+const FIRMWARE: &str = env!("TREAD_POD_FIRMWARE_REVISION");
 
 /// GAP appearance: Running Walking Sensor, In-Shoe.
 const APPEARANCE: u16 = 0x0441;
@@ -116,25 +101,28 @@ impl Footpod {
             // Mains powered.
             .set_value(&[100]);
 
-        // Device Information. The serial number comes from the footpod's address, which is
-        // unique to the chip and never changes.
-        let serial = serial_number(device.get_addr()?.as_be_bytes()).to_string();
+        // Device Information. The serial number is the footpod's address, which is unique to the
+        // chip and never changes.
+        let serial: String = device
+            .get_addr()?
+            .as_be_bytes()
+            .iter()
+            .map(|b| format!("{b:02X}"))
+            .collect();
         let info = server.create_service(DEVICE_INFORMATION);
         for (uuid, value) in [
-            (MANUFACTURER_NAME, MANUFACTURER.as_bytes()),
-            (MODEL_NUMBER, MODEL.as_bytes()),
-            (SERIAL_NUMBER, serial.as_bytes()),
-            (HARDWARE_REVISION, HARDWARE.as_bytes()),
-            (FIRMWARE_REVISION, FIRMWARE.as_bytes()),
-            (SOFTWARE_REVISION, SOFTWARE.as_bytes()),
-            (PNP_ID, &pnp_id()),
+            (MANUFACTURER_NAME, MANUFACTURER),
+            (MODEL_NUMBER, MODEL),
+            (SERIAL_NUMBER, serial.as_str()),
+            (HARDWARE_REVISION, HARDWARE),
+            (FIRMWARE_REVISION, FIRMWARE),
         ] {
             info.lock()
                 .create_characteristic(uuid, NimbleProperties::READ)
                 .lock()
-                .set_value(value);
+                .set_value(value.as_bytes());
         }
-        log::info!("device info: {MODEL}, firmware {FIRMWARE} ({SOFTWARE}), serial {serial}");
+        log::info!("device info: {MODEL}, firmware {FIRMWARE}, serial {serial}");
 
         // One central at a time: NimBLE stops advertising when a central connects, and only the
         // main loop starts it again (see `advertise`), once it knows who may connect next. Never
@@ -282,27 +270,6 @@ extern "C" fn on_gap_event(event: *mut sys::ble_gap_event, arg: *mut c_void) -> 
         _ => {}
     }
     0
-}
-
-/// The serial number as a decimal: a Garmin reads it as a number into the FIT `serial_number`
-/// (a non-zero `u32`), stopping at the first non-digit, so hex text would be cut short. The low
-/// four bytes of the address, which differ between chips.
-fn serial_number(address_be: [u8; 6]) -> u32 {
-    let [_, _, a, b, c, d] = address_be;
-    u32::from_be_bytes([a, b, c, d]).max(1)
-}
-
-/// PnP ID: vendor ID source, vendor ID, product ID and product version (`0xJJMN` for `JJ.M.N`),
-/// little-endian.
-fn pnp_id() -> [u8; 7] {
-    let part = |v: &str| v.parse::<u16>().unwrap_or(0);
-    let version = (part(env!("CARGO_PKG_VERSION_MAJOR")) << 8)
-        | (part(env!("CARGO_PKG_VERSION_MINOR")).min(0xf) << 4)
-        | part(env!("CARGO_PKG_VERSION_PATCH")).min(0xf);
-    let [v0, v1] = PNP_VENDOR.to_le_bytes();
-    let [p0, p1] = PNP_PRODUCT.to_le_bytes();
-    let [r0, r1] = version.to_le_bytes();
-    [PNP_VENDOR_SOURCE_USB, v0, v1, p0, p1, r0, r1]
 }
 
 /// The address as the engine stores it, most significant byte first.
