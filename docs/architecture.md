@@ -248,9 +248,10 @@ Everything is written from the Bluetooth SIG specifications (FTMS, RSC, BAS).
 - QZ (GPL-3.0) and RunBridge (closed source): no code is read or copied.
 - TreadLink (MIT): used only as a behavioral reference.
 
-## Roadmap
+## Tasks
 
-See [roadmap.md](roadmap.md) for what's done and what's next.
+Open work is tracked with git-bug, in the repository itself. See [Tasks](../README.md#tasks) in the
+README.
 
 ## Open questions
 

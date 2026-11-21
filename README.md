@@ -18,8 +18,8 @@ and no pairing per treadmill.
 ## Status
 
 Early, but working end to end. Pace and distance are correct on a Garmin watch with an FS-4C02A8
-treadmill. Planned next: a button for switching treadmills and a Wi-Fi settings page. See the
-[roadmap](docs/roadmap.md).
+treadmill. Planned next: a button for switching treadmills and a settings page over Bluetooth.
+Open work is tracked with git-bug (see [Tasks](#tasks)).
 
 ## Features
 
@@ -55,6 +55,11 @@ devenv shell -- fw-flash    # build, flash the board over USB, open the serial m
 
 `devenv test` runs every git hook and `check`, as CI does. [architecture.md](docs/architecture.md)
 describes the crates, the session state machine and the firmware design.
+
+## Tasks
+
+Tasks and bugs are tracked with [git-bug](https://github.com/git-bug/git-bug), stored in the
+repository itself and available in the devenv shell.
 
 ## Layout
 
