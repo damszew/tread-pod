@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795254083,"nonce":"yirc8z/fysAIOnwdiFdjNLAlgLI=","added":["task","firmware","engine"],"removed":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":3,"timestamp":1795254083,"nonce":"S0soAV39gdxPtfARDvDLAyuQxOQ=","message":"Done in 7e597ed (2026-11-19). Verified on the board with two watches (2026-11-21).","files":null}]}
