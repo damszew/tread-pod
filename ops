@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":3,"timestamp":1795254083,"nonce":"6vTG6gGAw3XBRVxajrG3syvFQoo=","message":"Done in 424feb7 (2026-11-19), with a fix in 046c2e4. Verified on the board with two watches (2026-11-21).","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":4,"timestamp":1795254083,"nonce":"qEALQQkD3QrmSjrfRgkm2N6c+qM=","status":2}]}
