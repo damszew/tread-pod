@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795254082,"nonce":"JBtcFkW7mlcbbO65PYplT/zk4Aw=","added":["task","project","engine"],"removed":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":3,"timestamp":1795254082,"nonce":"PvEY0rChvj7JpfJx/LVso3y0BIo=","message":"Done in 98577a9 and fc4993c (2026-11-12).","files":null}]}
