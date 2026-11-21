@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":1,"timestamp":1795254083,"nonce":"aZFzYTiRl2/lHAWmNFd2OGB3Q4I=","title":"Config API types and router, with a dev server","message":"Shared config API types, the HTTP router, and a dev server for working on the web UI without the\nboard.","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795254083,"nonce":"iGFn9UuiEc5a6ErQ+GKN3CgMNs4=","added":["task","config-ui"],"removed":null}]}
