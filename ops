@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":1,"timestamp":1795252398,"nonce":"ys6iZiY6LpKtQTYvgLUz78WihYk=","title":"Report the real battery level","message":"Send the real battery level over BAS once a battery is fitted.","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795252398,"nonce":"p7FBwnBVwN43cDHromXCKs0L+so=","added":["task","feature","hardware"],"removed":null}]}
