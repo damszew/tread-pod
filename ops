@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":1,"timestamp":1795252399,"nonce":"X+gO9dAVNQefWNSSqKihXscESik=","title":"Walking/running status bit in RSC","message":"Not needed for now: the watch already tells walking from running correctly from speed alone (first\ntest run, 2026-11-18).","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795252399,"nonce":"gIv2vRtxM1n+MpjMCsjI5MqEyXw=","added":["task","someday","feature"],"removed":null}]}
