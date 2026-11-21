@@ -8,6 +8,7 @@ repository.workspace = true
 
 [dependencies]
 heapless.workspace = true
+log.workspace = true
 postcard.workspace = true
 serde.workspace = true
 

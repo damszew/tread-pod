@@ -27,7 +27,10 @@ use esp32_nimble::{
     utilities::BleUuid,
 };
 
-use crate::input::{Input, Sender, send};
+use crate::{
+    input::{Input, Sender, send},
+    logger,
+};
 
 const FTMS_SERVICE: BleUuid = BleUuid::from_uuid16(0x1826);
 const TREADMILL_DATA: BleUuid = BleUuid::from_uuid16(0x2acd);
@@ -197,6 +200,7 @@ async fn run(commands: &Receiver<Command>, tx: &Sender, connecting: &Mutex<Optio
         if Instant::now() >= summary_at {
             summary_at += SCAN_SUMMARY;
             log::info!(
+                target: logger::SERIAL_ONLY,
                 "scan: {} advertisers in the last {} s, {} treadmills known",
                 heard.len(),
                 SCAN_SUMMARY.as_secs(),

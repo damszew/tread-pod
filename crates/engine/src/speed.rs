@@ -6,6 +6,14 @@ use heapless::Deque;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct FtmsSpeed(pub u16);
 
+impl FtmsSpeed {
+    pub const ZERO: Self = Self(0);
+
+    pub fn is_zero(self) -> bool {
+        self == Self::ZERO
+    }
+}
+
 /// RSC Measurement instantaneous speed: 1/256 m/s per unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct RscSpeed(pub u16);

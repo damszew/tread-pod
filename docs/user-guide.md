@@ -88,6 +88,7 @@ connect, so a second runner nearby can't take it over or record the wrong treadm
 | Light keeps **blinking fast**, or keeps switching between slow and fast | The signal is weak. **Check the antenna is attached** and clicked in. Move tread-pod closer to the treadmill console, and away from metal. |
 | Light is **on** but the watch shows no pace | Start the belt: pace only shows while it moves. Check the watch is using the foot pod, not GPS (see Speed Mode in [First-time setup](#first-time-setup)). |
 | Pace or distance is a bit off | Set the foot pod's **Calibration Factor** to 100 and turn automatic calibration off. |
+| Pace drops to 0 for a few seconds mid-run | The watch lost tread-pod for a moment (it may fill in pace from a chest strap meanwhile). When it reconnects, tread-pod has to reconnect to the treadmill too, and sends 0 until it has. Check the antenna, and keep tread-pod close. |
 | Watch keeps losing the foot pod | The signal is weak: check the antenna and keep tread-pod within a couple of metres of you. |
 | Anything else | Unplug tread-pod, wait 5 seconds, and plug it back in. Your watch stays paired. |
 

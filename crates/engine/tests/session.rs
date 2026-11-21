@@ -4,9 +4,33 @@ mod common;
 
 use engine::{
     config::{Address, Config},
-    session::{Action, DATA_TIMEOUT_MS, Event, Link, NOTIFY_DELAY_MS, SCAN_WINDOW_MS, Session},
+    session::{
+        Action, DATA_TIMEOUT_MS, Event, GAP_REPORT_MS, Link, NOTIFY_DELAY_MS, SCAN_WINDOW_MS,
+        SPEED_STALE_MS, Session,
+    },
     speed::{FtmsSpeed, RscSpeed},
 };
+
+/// The session's log lines on this test's thread since the last call.
+fn logs() -> Vec<String> {
+    struct Capture;
+    impl log::Log for Capture {
+        fn enabled(&self, _: &log::Metadata) -> bool {
+            true
+        }
+        fn log(&self, record: &log::Record) {
+            LINES.with(|l| l.borrow_mut().push(record.args().to_string()));
+        }
+        fn flush(&self) {}
+    }
+    thread_local!(static LINES: std::cell::RefCell<Vec<String>> = const { std::cell::RefCell::new(Vec::new()) });
+    static INIT: std::sync::Once = std::sync::Once::new();
+    INIT.call_once(|| {
+        log::set_logger(&Capture).unwrap();
+        log::set_max_level(log::LevelFilter::Trace);
+    });
+    LINES.take()
+}
 
 const A: Address = [0xa; 6];
 const B: Address = [0xb; 6];
@@ -24,6 +48,8 @@ impl Sim {
     }
 
     fn with(config: Config) -> Self {
+        // Installs the capture logger and clears this thread's lines.
+        logs();
         Self {
             session: Session::new(config),
             now: 0,
@@ -404,4 +430,91 @@ fn cadence_off_sends_zero_and_no_stride() {
     );
     // the feature still offers stride length: it is read once, at pairing
     assert_eq!(Session::rsc_feature().encode(), [0x01, 0x00]);
+}
+
+/// Sends a record every second for `secs` seconds.
+fn steady(sim: &mut Sim, centi_kmh: u16, secs: u64) {
+    for _ in 0..secs {
+        sim.ev(Event::TreadmillData(&speed_only(centi_kmh)));
+        sim.run(1_000);
+    }
+}
+
+#[test]
+fn steady_records_report_nothing() {
+    let mut sim = Sim::new();
+    sim.connect(A);
+    steady(&mut sim, 1000, 30);
+    assert_eq!(logs(), Vec::<String>::new());
+}
+
+#[test]
+fn a_short_silence_is_reported_as_stale_speed_then_a_gap() {
+    let mut sim = Sim::new();
+    sim.connect(A);
+    steady(&mut sim, 1000, 5);
+    logs();
+
+    // The loop above ended a second after the last record.
+    sim.run(SPEED_STALE_MS - 1_000 - 100);
+    assert_eq!(logs(), Vec::<String>::new());
+    sim.run(100);
+    assert_eq!(logs(), ["no treadmill data, sending speed 0"]);
+    // Reported once, not on every tick.
+    sim.run(500);
+    assert_eq!(logs(), Vec::<String>::new());
+
+    sim.ev(Event::TreadmillData(&speed_only(1000)));
+    assert_eq!(logs(), ["treadmill data gap: 3500 ms"]);
+    assert_eq!(
+        sim.session.link(),
+        Link::Connected {
+            address: A,
+            since: SCAN_WINDOW_MS,
+            last_data: Some(sim.now)
+        }
+    );
+}
+
+#[test]
+fn a_gap_below_the_stale_limit_is_reported_alone() {
+    let mut sim = Sim::new();
+    sim.connect(A);
+    steady(&mut sim, 1000, 3);
+    sim.run(GAP_REPORT_MS - 1_000);
+    sim.ev(Event::TreadmillData(&speed_only(1000)));
+    assert_eq!(logs(), [format!("treadmill data gap: {GAP_REPORT_MS} ms")]);
+}
+
+#[test]
+fn a_long_silence_ends_in_a_data_timeout() {
+    let mut sim = Sim::new();
+    sim.connect(A);
+    steady(&mut sim, 1000, 3);
+    sim.run(DATA_TIMEOUT_MS);
+    assert_eq!(
+        logs(),
+        [
+            "no treadmill data, sending speed 0",
+            "treadmill silent too long, reconnecting"
+        ]
+    );
+    // The next link starts clean: no gap from the old one.
+    sim.adv(A, -60);
+    sim.run(1_000);
+    sim.ev(Event::Connected(A));
+    sim.ev(Event::TreadmillData(&speed_only(1000)));
+    assert_eq!(logs(), Vec::<String>::new());
+}
+
+#[test]
+fn the_treadmill_reporting_zero_is_reported_once() {
+    let mut sim = Sim::new();
+    sim.connect(A);
+    steady(&mut sim, 1000, 3);
+    steady(&mut sim, 0, 3);
+    assert_eq!(logs(), ["treadmill reports speed 0"]);
+    // Starting from 0 is not a stop.
+    steady(&mut sim, 1000, 3);
+    assert_eq!(logs(), Vec::<String>::new());
 }

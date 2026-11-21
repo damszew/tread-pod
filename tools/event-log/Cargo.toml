@@ -1,0 +1,15 @@
+[package]
+name = "event-log"
+description = "Print a tread-pod event log read off the device (see the fw-log devenv script)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+anyhow = "1"
+engine.workspace = true
+
+[lints]
+workspace = true

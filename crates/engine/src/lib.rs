@@ -8,6 +8,7 @@
 
 pub mod cadence;
 pub mod config;
+pub mod event_log;
 pub mod ftms;
 pub mod rsc;
 pub mod selection;

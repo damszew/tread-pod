@@ -9,6 +9,7 @@ mod central;
 mod footpod;
 mod input;
 mod led;
+mod logger;
 
 use std::{
     sync::mpsc::{self, RecvTimeoutError},
@@ -21,7 +22,7 @@ use engine::{
     watch::{Admission, Gate, Leave},
 };
 use esp_idf_svc::{
-    hal::peripherals::Peripherals,
+    hal::{peripherals::Peripherals, reset::ResetReason},
     nvs::{EspDefaultNvsPartition, EspNvs, NvsDefault},
 };
 use esp32_nimble::{BLEAddress, BLEDevice};
@@ -40,11 +41,15 @@ const ADVERTISE_RETRY_MS: u64 = 1_000;
 fn main() -> anyhow::Result<()> {
     // Required once at startup so patches to the runtime implemented by esp-idf-sys get linked.
     esp_idf_svc::sys::link_patches();
-    esp_idf_svc::log::EspLogger::initialize_default();
+    logger::init();
 
     let mut nvs = EspNvs::new(EspDefaultNvsPartition::take()?, NVS_NAMESPACE, true)?;
     let config = load_config(&nvs);
-    log::info!("tread-pod starting with {config:?}");
+    // Tells a crash, watchdog or brownout apart from a normal power-up when a link drops.
+    log::info!(
+        "tread-pod starting (reset reason: {:?}) with {config:?}",
+        ResetReason::get()
+    );
 
     let peripherals = Peripherals::take()?;
     // XIAO ESP32-S3 user LED.

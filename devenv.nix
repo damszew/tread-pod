@@ -137,8 +137,20 @@ in
         ${espEnv}
         cd "$DEVENV_ROOT/firmware"
         cargo build --release
-        espflash save-image --chip esp32s3 --merge \
+        espflash save-image --chip esp32s3 --merge --flash-size 8mb --partition-table partitions.csv \
           target/xtensa-esp32s3-espidf/release/firmware target/tread-pod.bin
+      '';
+    };
+
+    fw-log = {
+      description = "Read the flash log off the device over USB and print it";
+      exec = ''
+        set -e
+        dump="$(mktemp)"
+        trap 'rm -f "$dump"' EXIT
+        # The evlog partition in firmware/partitions.csv.
+        espflash read-flash 0x400000 0x40000 "$dump"
+        cd "$DEVENV_ROOT" && cargo run -q --release -p event-log -- "$dump"
       '';
     };
   };
@@ -161,7 +173,7 @@ in
   };
 
   enterShell = ''
-    echo "tread-pod dev shell — scripts: check, sniff, web-build, web-dev, esp-setup, fw-build, fw-flash, fw-image"
+    echo "tread-pod dev shell — scripts: check, sniff, web-build, web-dev, esp-setup, fw-build, fw-flash, fw-image, fw-log"
   '';
 
   enterTest = ''

@@ -18,6 +18,11 @@
 //!   least every [`NOTIFY_INTERVAL_MS`] otherwise; with no fresh speed it is 0, never silence,
 //!   so the watch keeps the footpod. Nothing is sent for [`NOTIFY_DELAY_MS`] after subscribing:
 //!   some Garmins drop data that arrives before they have processed the connection.
+//!
+//! # Logs
+//!
+//! The session logs, through `log`, what changes the watch's recording without changing the link
+//! state, such as a treadmill going quiet for a few seconds. The backend picks the logger.
 
 use heapless::Vec;
 
@@ -45,6 +50,9 @@ pub const NOTIFY_DELAY_MS: u64 = 1_000;
 pub const NOTIFY_INTERVAL_MS: u64 = 2_000;
 /// A speed older than this is reported as 0.
 pub const SPEED_STALE_MS: u64 = 3_000;
+/// A gap between treadmill records at least this long is reported. Records normally come about
+/// once a second.
+pub const GAP_REPORT_MS: u64 = 2_000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Event<'a> {
@@ -124,6 +132,8 @@ pub struct Session {
     /// Latest speed and when it arrived.
     speed: Option<(u64, FtmsSpeed)>,
     last_notify: Option<u64>,
+    /// The stale speed was logged for the current speed.
+    stale_reported: bool,
 }
 
 impl Session {
@@ -138,6 +148,7 @@ impl Session {
             distance_speed: DistanceSpeed::new(),
             speed: None,
             last_notify: None,
+            stale_reported: false,
         }
     }
 
@@ -172,7 +183,7 @@ impl Session {
     pub fn speed(&self, now_ms: u64) -> FtmsSpeed {
         match self.speed {
             Some((t, s)) if now_ms < t + SPEED_STALE_MS => s,
-            _ => FtmsSpeed(0),
+            _ => FtmsSpeed::ZERO,
         }
     }
 
@@ -253,8 +264,8 @@ impl Session {
     fn treadmill_data(&mut self, now_ms: u64, bytes: &[u8], out: &mut Actions) {
         let Link::Connected {
             address,
-            ref mut last_data,
-            ..
+            last_data,
+            since,
         } = self.link
         else {
             return;
@@ -267,11 +278,24 @@ impl Session {
         for record in self.reassembler.push(part) {
             any = true;
             if let Some(speed) = record_speed(&mut self.distance_speed, now_ms, &record) {
+                if speed.is_zero() && self.speed.is_some_and(|(_, s)| !s.is_zero()) {
+                    log::info!("treadmill reports speed 0");
+                }
                 self.speed = Some((now_ms, speed));
+                self.stale_reported = false;
             }
         }
         if any {
-            *last_data = Some(now_ms);
+            if let Some(previous) = last_data
+                && now_ms >= previous + GAP_REPORT_MS
+            {
+                log::warn!("treadmill data gap: {} ms", now_ms - previous);
+            }
+            self.link = Link::Connected {
+                address,
+                since,
+                last_data: Some(now_ms),
+            };
             self.candidates.touch(now_ms, address);
             self.notify(now_ms, out);
         }
@@ -330,8 +354,15 @@ impl Session {
                 last_data,
             } => {
                 if now_ms >= last_data.unwrap_or(since) + DATA_TIMEOUT_MS {
+                    log::warn!("treadmill silent too long, reconnecting");
                     emit(out, Action::Disconnect(address));
                     self.rescan(now_ms, now_ms + RETRY_DELAY_MS);
+                } else if let Some((t, _)) = self.speed
+                    && now_ms >= t + SPEED_STALE_MS
+                    && !self.stale_reported
+                {
+                    self.stale_reported = true;
+                    log::warn!("no treadmill data, sending speed 0");
                 }
             }
         }
@@ -379,6 +410,7 @@ impl Session {
         self.reassembler = Reassembler::new();
         self.distance_speed = DistanceSpeed::new();
         self.speed = None;
+        self.stale_reported = false;
     }
 
     fn link_address(&self) -> Option<Address> {
@@ -402,6 +434,7 @@ fn record_speed(
     }
 }
 
+/// A free function so it can run while the reassembler is borrowed.
 fn emit(out: &mut Actions, action: Action) {
     let pushed = out.push(action);
     debug_assert!(pushed.is_ok(), "Actions capacity too small");

@@ -35,6 +35,7 @@ tread-pod/
 ├── firmware/               # ESP32-S3 bridge; NOT a workspace member
 ├── tools/                  # spike tools, can be deleted later
 │   ├── ftms-sniff/
+│   ├── event-log/          # prints the device's flash log (fw-log)
 │   ├── rsc-fixed/
 │   └── rssi-survey/
 ├── flasher/                # static ESP Web Tools page (index.html + manifest template)
@@ -64,6 +65,9 @@ session.handle(now_ms: u64, event: Event) -> Actions   // Actions: heapless::Vec
   `Connected(addr)`, `Disconnected(addr)`, `TreadmillData(&[u8])`, `Button`, `Select(addr)`,
   `SetConfig(Config)`, `Tick` (at least every 250 ms).
 - **Actions:** `Connect(addr)`, `Disconnect(addr)`, `NotifyRsc(Encoded)`, `Persist(Config)`.
+- **Logs** (the `log` crate; the backend installs the logger): what the watch records but the
+  link state doesn't show: treadmill data gaps of 2 s or more, speed sent as 0 for lack of data,
+  the treadmill reporting 0, and data timeouts.
 - **State for the LED and API** is read from the session (`link()`, `target()`, `candidates()`,
   `speed(now)`) rather than pushed as actions.
 - The backend **scans continuously** (low duty cycle) and reports every FTMS advertisement, so
@@ -92,6 +96,7 @@ Modules:
 | `session` | Top-level machine: link state (Idle → Scanning → Connecting → Connected), target, watch gating, notify delay/heartbeat, button, API |
 | `watch` | Which watch may connect: the RSC subscriber owns the footpod, and keeps it for 2 min after a lost link |
 | `config` | `Config { version, pinned, cadence, … }`, serde + postcard |
+| `event_log` | Persistent log ring: lines in 128-byte CRC-checked slots in flash sectors behind a `Storage` trait, sequence numbers across reboots, survives power cuts mid-write |
 
 Tests:
 - Parser tests against real packets captured with `tools/ftms-sniff` (`tests/fixtures/*.hex`).
@@ -147,6 +152,14 @@ the PC without flashing the board.
   connection the session wants: connect, discover FTMS, subscribe to Treadmill Data. A connect
   the session gives up on is cancelled from the main thread (`ble_gap_conn_cancel`).
 - **Config:** postcard blob in NVS.
+- **Logging** (`logger.rs`): every line goes to USB serial; info and above also go to
+  `engine::event_log` on the 256 KB `evlog` partition from `firmware/partitions.csv`, about 2,000
+  lines with the time since boot. A writer thread does the flash writes, since an erase stalls for
+  tens of ms; when it falls behind, lines are dropped. It has to be flash: moving the USB cable
+  from a charger to a laptop restarts the board. `fw-log` reads
+  the partition with `espflash read-flash` and decodes it with `tools/event-log`, so it works even
+  if the firmware doesn't. The partition table keeps `nvs`, `phy_init` and `factory` where
+  espflash's default table has them, so the config and pairing survive the switch.
 - **Button:** short press cycles treadmills, long press enters config mode, very long press does
   a factory reset.
 - **LED** (`led.rs`, XIAO user LED on GPIO21, active low): the treadmill link only, since the
@@ -206,6 +219,7 @@ Scripts:
 | `esp-setup` | `espup install` of the pinned toolchain into `~/.cache/tread-pod/esp` (separate `RUSTUP_HOME`/`CARGO_HOME`) |
 | `fw-build` / `fw-flash` | build / flash `firmware` |
 | `fw-image` | merged image via `espflash save-image --merge` |
+| `fw-log` | reads the flash log off the device over USB and prints it |
 
 The Xtensa Rust toolchain is not in nixpkgs, so `esp-setup` uses espup. Its version is pinned by the
 `esp-<version>` channel in `firmware/rust-toolchain.toml`. esp-idf-sys downloads ESP-IDF on its own
