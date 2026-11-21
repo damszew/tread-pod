@@ -141,6 +141,9 @@ impl Advertising {
                 self.owner = self.central.filter(|c| footpod::address(*c) == *address);
             }
             Input::WatchDisconnected { address, reason } => {
+                // A central was on, so NimBLE stopped advertising, even if its connect was never
+                // reported.
+                self.applied = None;
                 self.central = None;
                 self.rejected = false;
                 let leave = Leave::from_hci(*reason);

@@ -7,7 +7,11 @@
 
 use std::{
     collections::HashSet,
-    sync::{Arc, Mutex as StdMutex},
+    ffi::c_void,
+    sync::{
+        Arc, Mutex as StdMutex,
+        atomic::{AtomicU8, Ordering},
+    },
 };
 
 use engine::config::Address;
@@ -18,6 +22,8 @@ use esp32_nimble::{
     enums::AdvFilterPolicy,
     utilities::{BleUuid, mutex::Mutex},
 };
+
+use esp_idf_svc::sys;
 
 use crate::input::{Input, Sender, send};
 
@@ -136,22 +142,8 @@ impl Footpod {
         // another runner's treadmill. sdkconfig caps connections at 2 (treadmill + this one) as a
         // backstop.
         server.advertise_on_disconnect(false);
-        {
-            let tx = tx.clone();
-            server.on_connect(move |_, desc| {
-                log::info!(
-                    "watch connected: {}; not advertising until it leaves",
-                    desc.address()
-                );
-                send(
-                    &tx,
-                    Input::WatchConnected {
-                        conn: desc.conn_handle(),
-                        address: desc.address(),
-                    },
-                );
-            });
-        }
+        // Connects come from a raw GAP listener, not `on_connect`: see `watch_links`.
+        watch_links(tx.clone());
         server.on_disconnect(move |desc, reason| {
             log::info!("watch disconnected: {} ({reason:?})", desc.address());
             let watch = address(desc.address());
@@ -210,7 +202,7 @@ impl Footpod {
     /// Whether a central holds the footpod, as NimBLE sees it. Set before `WatchConnected`
     /// reaches the main loop.
     pub fn has_central() -> bool {
-        BLEDevice::take().get_server().connected_count() > 0
+        CENTRALS.load(Ordering::Relaxed) > 0
     }
 
     /// Drops a central that must not hold the footpod.
@@ -219,6 +211,77 @@ impl Footpod {
             log::warn!("dropping central {conn}: {err:?}");
         }
     }
+}
+
+/// Centrals connected to the footpod (links where it is the peripheral).
+static CENTRALS: AtomicU8 = AtomicU8::new(0);
+
+/// Reports every central that connects, as `Input::WatchConnected`, and keeps `CENTRALS`.
+///
+/// esp32-nimble's `on_connect` misses some: as a peripheral, NimBLE delivers the connect event
+/// only after reading the central's version and features, and with the feature read's error as
+/// its status if that fails, though the link stays up. esp32-nimble ignores a connect with an
+/// error status, so such a watch (seen with `C3:A4:A4:0B:3E:75`) could hold the footpod unseen,
+/// and once it left, advertising never came back. A GAP listener gets every event first, before
+/// esp32-nimble's handler.
+fn watch_links(tx: Sender) {
+    // Both live as long as NimBLE: the listener is linked into its list.
+    let tx: &'static Sender = Box::leak(Box::new(tx));
+    let listener: &'static mut sys::ble_gap_event_listener =
+        Box::leak(Box::new(unsafe { core::mem::zeroed() }));
+    let rc = unsafe {
+        sys::ble_gap_event_listener_register(
+            listener,
+            Some(on_gap_event),
+            core::ptr::from_ref(tx).cast_mut().cast(),
+        )
+    };
+    if rc != 0 {
+        log::error!("can't listen for watch connections: {rc}");
+    }
+}
+
+extern "C" fn on_gap_event(event: *mut sys::ble_gap_event, arg: *mut c_void) -> i32 {
+    // SAFETY: NimBLE passes a valid event, and `arg` is the leaked `Sender` from `watch_links`.
+    let (event, tx) = unsafe { (&*event, &*arg.cast::<Sender>()) };
+    match event.type_ as u32 {
+        sys::BLE_GAP_EVENT_CONNECT => {
+            let connect = unsafe { &event.__bindgen_anon_1.connect };
+            // `EAGAIN`: the link closed before it was reported, and no disconnect follows.
+            if connect.status == sys::BLE_HS_EAGAIN as i32 {
+                return 0;
+            }
+            let mut desc: sys::ble_gap_conn_desc = unsafe { core::mem::zeroed() };
+            let found = unsafe { sys::ble_gap_conn_find(connect.conn_handle, &mut desc) } == 0;
+            if !found || u32::from(desc.role) != sys::BLE_GAP_ROLE_SLAVE {
+                return 0;
+            }
+            CENTRALS.fetch_add(1, Ordering::Relaxed);
+            let address = BLEAddress::from(desc.peer_ota_addr);
+            match connect.status {
+                0 => log::info!("watch connected: {address}; not advertising until it leaves"),
+                status => log::info!(
+                    "watch connected: {address} (status {status}); not advertising until it leaves"
+                ),
+            }
+            send(
+                tx,
+                Input::WatchConnected {
+                    conn: connect.conn_handle,
+                    address,
+                },
+            );
+        }
+        sys::BLE_GAP_EVENT_DISCONNECT => {
+            let disconnect = unsafe { &event.__bindgen_anon_1.disconnect };
+            if u32::from(disconnect.conn.role) == sys::BLE_GAP_ROLE_SLAVE {
+                let _ = CENTRALS
+                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1));
+            }
+        }
+        _ => {}
+    }
+    0
 }
 
 /// The serial number as a decimal: a Garmin reads it as a number into the FIT `serial_number`
@@ -249,7 +312,7 @@ pub fn address(address: BLEAddress) -> Address {
 
 /// The HCI reason behind a disconnect; 0 (unknown, treated as a lost link) if it isn't one.
 fn hci_reason(reason: Result<(), BLEError>) -> u8 {
-    let hci_base = esp_idf_svc::sys::BLE_HS_ERR_HCI_BASE;
+    let hci_base = sys::BLE_HS_ERR_HCI_BASE;
     match reason {
         Err(err) if (hci_base..hci_base + 0x100).contains(&err.code()) => {
             u8::try_from(err.code() - hci_base).unwrap_or(0)
