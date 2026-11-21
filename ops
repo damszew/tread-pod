@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":5,"timestamp":1795254082,"nonce":"P2/qvB41vviiaVQrrhZQUJYAYXo=","added":["task","firmware"],"removed":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":3,"timestamp":1795254082,"nonce":"oEDR9nozSVwFdkXpu3J9Onfuv0E=","message":"Done in a0f19c5 (2026-11-13), with fixes in 6ec5691 and 7745d30. Verified end to end on a Garmin:\npace and distance correct.","files":null}]}
