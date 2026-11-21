@@ -2,10 +2,14 @@
   pkgs,
   lib,
   config,
+  inputs,
   ...
 }:
 
 let
+  # For packages that need a newer version than devenv-nixpkgs' pin (git-bug >= 0.12).
+  pkgs-unstable = import inputs.nixpkgs-unstable { inherit (pkgs.stdenv) system; };
+
   # The Xtensa (ESP32-S3) Rust toolchain is not in nixpkgs: `esp-setup` installs it with espup,
   # and only the `fw-*` scripts use it. The toolchain and esp-idf-sys's ESP-IDF checkout live in a
   # per-user cache shared by every checkout and git worktree. Both are keyed by version (the
@@ -58,6 +62,7 @@ in
     # misc
     convco
     taplo
+    pkgs-unstable.git-bug # task tracking
   ];
 
   scripts = {
