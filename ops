@@ -1,1 +1,1 @@
-{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":3,"timestamp":1795254084,"nonce":"STWdQF2+exKdDavmQN+MpV8S1Uo=","message":"Done. Running power came back, but Garmin showed twice the cadence: it reads RSC cadence as strides\nper minute, and worked out stride length from that. Fixed in the next issue; the follow-up check is\n3c925f7.","files":null}]}
+{"author":{"id":"60e8a4f6c4ac173f9427846756ea0ba4ba542d61e99b8bc2fc9c99440a92cf8c"},"ops":[{"type":4,"timestamp":1795254084,"nonce":"ufD0em25c0mwbhAbKIOt51hmIJ4=","status":2}]}
